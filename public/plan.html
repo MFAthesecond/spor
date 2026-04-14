@@ -1,0 +1,1262 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Furkan — Kişisel Spor & Beslenme Planı</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #222638;
+      --accent: #6c63ff;
+      --accent2: #ff6584;
+      --green: #43e97b;
+      --orange: #fa8231;
+      --yellow: #f9ca24;
+      --text: #e8eaf6;
+      --muted: #8891b4;
+      --border: #2a2f4a;
+      --radius: 14px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 32px 16px 64px;
+    }
+    .container { max-width: 960px; margin: 0 auto; }
+
+    /* HEADER */
+    header {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+    header h1 {
+      font-size: 2.2rem;
+      font-weight: 800;
+      background: linear-gradient(135deg, var(--accent), var(--green));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 6px;
+    }
+    header p { color: var(--muted); font-size: 1rem; }
+
+    /* STATS ROW */
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 14px;
+      margin-bottom: 36px;
+    }
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px 14px;
+      text-align: center;
+    }
+    .stat-card .label { font-size: 0.72rem; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 6px; }
+    .stat-card .value { font-size: 1.7rem; font-weight: 700; }
+    .stat-card .unit { font-size: 0.75rem; color: var(--muted); }
+
+    /* SECTION */
+    .section { margin-bottom: 36px; }
+    .section-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: .1em;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .section-title::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    /* GRID 2 COL */
+    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    @media (max-width: 620px) { .grid2 { grid-template-columns: 1fr; } }
+
+    /* CARD */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+    }
+    .card h3 {
+      font-size: 0.95rem;
+      font-weight: 700;
+      margin-bottom: 14px;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .card ul { list-style: none; }
+    .card ul li {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      padding: 6px 0;
+      font-size: 0.88rem;
+      color: #c5c9e0;
+      border-bottom: 1px solid var(--border);
+      line-height: 1.45;
+    }
+    .card ul li:last-child { border-bottom: none; }
+    .card ul li .dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      margin-top: 5px;
+      flex-shrink: 0;
+    }
+
+    /* WEEKLY SCHEDULE */
+    .week-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 8px;
+    }
+    @media (max-width: 620px) { .week-grid { grid-template-columns: repeat(4, 1fr); } }
+    .day-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 8px;
+      text-align: center;
+    }
+    .day-card.active { border-color: var(--accent); background: #1e1f38; }
+    .day-card.rest { border-color: var(--border); opacity: .7; }
+    .day-card .day-name { font-size: 0.7rem; color: var(--muted); text-transform: uppercase; margin-bottom: 6px; letter-spacing:.05em; }
+    .day-card .day-icon { font-size: 1.5rem; margin-bottom: 4px; }
+    .day-card .day-label { font-size: 0.7rem; font-weight: 600; color: var(--text); }
+
+    /* NUTRITION MACROS */
+    .macro-bar-wrap { margin-bottom: 14px; }
+    .macro-bar-wrap:last-child { margin-bottom: 0; }
+    .macro-row { display: flex; justify-content: space-between; font-size: 0.82rem; margin-bottom: 4px; }
+    .macro-bar-bg {
+      width: 100%;
+      height: 10px;
+      background: var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    .macro-bar-fill {
+      height: 100%;
+      border-radius: 10px;
+      transition: width .4s ease;
+    }
+
+    /* TESTOSTERONE TIPS */
+    .tip-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 14px;
+    }
+    .tip-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px 16px;
+    }
+    .tip-card .tip-icon { font-size: 1.6rem; margin-bottom: 8px; }
+    .tip-card h4 { font-size: 0.85rem; font-weight: 700; margin-bottom: 6px; }
+    .tip-card p { font-size: 0.78rem; color: var(--muted); line-height: 1.5; }
+
+    /* BADGE */
+    .badge {
+      display: inline-block;
+      font-size: 0.68rem;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 20px;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+    }
+    .badge-push { background: #3d2b6b; color: #a78bfa; }
+    .badge-pull { background: #1e3a5f; color: #60a5fa; }
+    .badge-legs { background: #1a4731; color: #4ade80; }
+    .badge-cardio { background: #4a2020; color: #f87171; }
+    .badge-rest  { background: #2a2a2a; color: #888; }
+
+    /* CALORIE COUNTER */
+    .calorie-box {
+      background: linear-gradient(135deg, #1e1f38, #23253e);
+      border: 1px solid var(--accent);
+      border-radius: var(--radius);
+      padding: 24px;
+      text-align: center;
+    }
+    .calorie-box .big-num {
+      font-size: 3rem;
+      font-weight: 800;
+      background: linear-gradient(135deg, var(--accent), var(--green));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .calorie-box .sub { font-size: 0.85rem; color: var(--muted); margin-top: 4px; }
+
+    /* PROGRESS RING */
+    .rings { display: flex; gap: 24px; justify-content: center; flex-wrap: wrap; margin-top: 10px; }
+    .ring-item { text-align: center; }
+    .ring-item svg { display: block; margin: 0 auto 6px; }
+    .ring-item span { font-size: 0.75rem; color: var(--muted); }
+
+    /* MEAL PLAN */
+    .meal { display: flex; align-items: flex-start; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--border); }
+    .meal:last-child { border-bottom: none; }
+    .meal-time { font-size: 0.72rem; color: var(--muted); min-width: 60px; padding-top: 2px; }
+    .meal-content h4 { font-size: 0.88rem; font-weight: 700; margin-bottom: 3px; }
+    .meal-content p { font-size: 0.78rem; color: #a0a8c8; line-height: 1.4; }
+
+    /* TOGGLE TABS */
+    .tabs { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+    .tab-btn {
+      padding: 7px 16px;
+      border-radius: 20px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--muted);
+      font-size: 0.82rem;
+      cursor: pointer;
+      transition: all .2s;
+    }
+    .tab-btn.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    /* ALERT */
+    .alert {
+      background: #241a35;
+      border-left: 3px solid var(--accent2);
+      border-radius: 8px;
+      padding: 12px 16px;
+      font-size: 0.82rem;
+      color: #d4b8ff;
+      margin-bottom: 16px;
+      line-height: 1.5;
+    }
+
+    /* SCIENCE BOX */
+    .science-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 12px;
+    }
+    .science-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+    }
+    .science-card .sci-tag {
+      display: inline-block;
+      font-size: .65rem;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 10px;
+      background: #1e1f38;
+      color: #a78bfa;
+      text-transform: uppercase;
+      letter-spacing: .07em;
+      margin-bottom: 8px;
+    }
+    .science-card h4 { font-size: .88rem; font-weight: 700; margin-bottom: 6px; }
+    .science-card p { font-size: .78rem; color: var(--muted); line-height: 1.55; }
+    .science-card .sci-highlight {
+      display: inline-block;
+      background: #1a1830;
+      border: 1px solid #3d3870;
+      border-radius: 6px;
+      padding: 3px 10px;
+      font-size: .75rem;
+      color: #a78bfa;
+      font-weight: 700;
+      margin-top: 8px;
+    }
+
+    /* VOLUME TABLE */
+    .vol-table { width: 100%; border-collapse: collapse; font-size: .8rem; }
+    .vol-table th {
+      text-align: left;
+      padding: 6px 10px;
+      border-bottom: 1px solid var(--border);
+      font-size: .68rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .07em;
+    }
+    .vol-table td { padding: 7px 10px; border-bottom: 1px solid var(--border); }
+    .vol-table tr:last-child td { border-bottom: none; }
+    .vol-bar-wrap { display: flex; align-items: center; gap: 8px; }
+    .vol-bar-bg { flex: 1; height: 8px; background: var(--border); border-radius: 8px; overflow: hidden; }
+    .vol-bar-fill { height: 100%; border-radius: 8px; }
+    .vol-sets { font-size: .75rem; color: var(--muted); white-space: nowrap; }
+
+    /* PROGRESSION BOX */
+    .prog-box {
+      background: #0f0e1a;
+      border: 1px solid #3d3870;
+      border-radius: 10px;
+      padding: 16px;
+      margin-top: 14px;
+    }
+    .prog-box h4 { font-size: .85rem; font-weight: 700; color: #a78bfa; margin-bottom: 10px; }
+    .prog-step {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      margin-bottom: 8px;
+      font-size: .82rem;
+    }
+    .prog-step:last-child { margin-bottom: 0; }
+    .prog-num {
+      background: #3d3870;
+      color: #a78bfa;
+      border-radius: 50%;
+      width: 20px;
+      height: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: .7rem;
+      font-weight: 700;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    /* WARMUP */
+    .warmup-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: .85rem;
+    }
+    .warmup-item:last-child { border-bottom: none; }
+    .warmup-time {
+      font-size: .72rem;
+      color: var(--orange);
+      font-weight: 700;
+      min-width: 42px;
+    }
+
+    footer {
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.75rem;
+      margin-top: 48px;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <!-- HEADER -->
+  <header>
+    <h1>💪 Furkan'ın Rekomp Programı</h1>
+    <p>Bilimsel Temelli · Yağ Yakıp Kas Yapma · Performans · Testosteron Optimizasyonu</p>
+    <a href="makro.html" style="display:inline-block;margin-top:16px;padding:10px 24px;background:var(--accent);color:#fff;border-radius:20px;text-decoration:none;font-size:.85rem;font-weight:700;letter-spacing:.04em;">📊 Makro Takibine Git →</a>
+  </header>
+
+  <!-- STATS -->
+  <div class="stats">
+    <div class="stat-card">
+      <div class="label">Yaş</div>
+      <div class="value" style="color:#6c63ff">29</div>
+      <div class="unit">yıl</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Boy</div>
+      <div class="value" style="color:#43e97b">1.85</div>
+      <div class="unit">metre</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Kilo</div>
+      <div class="value" style="color:#f9ca24">95</div>
+      <div class="unit">kg</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">VKİ</div>
+      <div class="value" style="color:#fa8231">27.8</div>
+      <div class="unit">fazla kilolu sınırı</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">TDEE</div>
+      <div class="value" style="color:#ff6584">2 900</div>
+      <div class="unit">kcal/gün tahmini</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Rekomp Kalorisi</div>
+      <div class="value" style="color:#43e97b">2 750</div>
+      <div class="unit">kcal — hafif açık (~150 eksi)</div>
+    </div>
+  </div>
+
+  <!-- REKOMP BİLİMİ -->
+  <div class="section">
+    <div class="section-title">Body Rekomp Neden Senin İçin Çalışır?</div>
+    <div class="alert" style="margin-bottom:16px;">
+      ⚡ <strong>Önemli Düzeltme:</strong> Rekomp için kalori fazlası (<em>bulk</em>) değil, bakım kalorisi ya da hafif açık gerekir. Önceki 3100 kcal hedefi yanlıştı — yeni hedef <strong>2 750 kcal</strong>. Protein ise 190g'dan <strong>220g'a</strong> çıktı.
+    </div>
+    <div class="science-grid">
+      <div class="science-card">
+        <span class="sci-tag">Araştırma</span>
+        <h4>Rekomp Senin İçin İdeal</h4>
+        <p>Araştırmalar gösteriyor ki yüksek vücut yağı, spora ara vermiş bireyler ve kassal hafıza (muscle memory) sahipleri en hızlı rekomp yapanlardır. Sende üçü de var.</p>
+        <span class="sci-highlight">+%40 daha hızlı rekomp avantajı</span>
+      </div>
+      <div class="science-card">
+        <span class="sci-tag">Fizyoloji</span>
+        <h4>Yağdan Enerji, Protein'den Kas</h4>
+        <p>Kas inşa etmenin metabolik maliyeti yalnızca 3–4 kcal/gram. Bu enerji, yağ depolarından karşılanabilir. Kalori açığı kapatılmaz — yağ kapatır.</p>
+        <span class="sci-highlight">Kaslar, yağ yakarken büyüyebilir</span>
+      </div>
+      <div class="science-card">
+        <span class="sci-tag">Beslenme</span>
+        <h4>Protein: Tek Değişmez Kural</h4>
+        <p>PubMed (2016): 2.4 g/kg protein alan grup, 1.2 g/kg gruba kıyasla kalori açığında çok daha fazla kas kazandı ve yağ kaybetti. Senin için hedef: <strong>2.3 × 95 = ~220g/gün.</strong></p>
+        <span class="sci-highlight">2.2–2.4 g/kg/gün protein</span>
+      </div>
+      <div class="science-card">
+        <span class="sci-tag">Antrenman</span>
+        <h4>Mekanik Gerilim = Büyüme</h4>
+        <p>Kas büyümesinin birincil tetikleyicisi kalori değil, <em>progresif mekanik gerilim</em>dir. Her sette ağırlık veya tekrar artışı → kas büyür. Bu yüzden progresif yüklenme planın temelidir.</p>
+        <span class="sci-highlight">Ağırlık artışı > Kalori fazlası</span>
+      </div>
+      <div class="science-card">
+        <span class="sci-tag">NEAT</span>
+        <h4>Günlük Adım Hedefi: 8000–10000</h4>
+        <p>Non-Exercise Activity Thermogenesis (NEAT) günde +200–400 kcal yakar ama kas toparlanmasını etkilemez. Masa başı çalışıyorsan bu faktör kritik. Telefona adım sayar takın.</p>
+        <span class="sci-highlight">+350 kcal/gün ekstra yakım</span>
+      </div>
+      <div class="science-card">
+        <span class="sci-tag">Testosteron</span>
+        <h4>Uyku = %70 Testosteron</h4>
+        <p>JAMA 2011: Günde 5 saat uyuyanların testosteron seviyeleri 10–15 yıl yaşlanmış bir erkekle eşdeğer çıktı. 7–9 saat uyku, testin en güçlü doğal artırıcısıdır.</p>
+        <span class="sci-highlight">5h uyku = -10-15% testosteron</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- HAFTALIK PROGRAM -->
+  <div class="section">
+    <div class="section-title">Haftalık Antrenman Takvimi</div>
+    <div class="week-grid">
+      <div class="day-card active">
+        <div class="day-name">Pzt</div>
+        <div class="day-icon">🏋️</div>
+        <div class="day-label">Salon A — Upper (Push)</div>
+      </div>
+      <div class="day-card rest">
+        <div class="day-name">Sal</div>
+        <div class="day-icon">🧘</div>
+        <div class="day-label">Aktif Dinlenme / Yürüyüş</div>
+      </div>
+      <div class="day-card active">
+        <div class="day-name">Çar</div>
+        <div class="day-icon">⚽</div>
+        <div class="day-label">Halı Saha (akşam)</div>
+      </div>
+      <div class="day-card rest">
+        <div class="day-name">Per</div>
+        <div class="day-icon">💤</div>
+        <div class="day-label">Dinlenme (toparlanma)</div>
+      </div>
+      <div class="day-card active">
+        <div class="day-name">Cum</div>
+        <div class="day-icon">🏋️</div>
+        <div class="day-label">Salon B — Lower + Core</div>
+      </div>
+      <div class="day-card" style="border-color:#fa8231;background:#1f1a10;">
+        <div class="day-name">Cmt</div>
+        <div class="day-icon">➕</div>
+        <div class="day-label" style="color:#fa8231;">3. Gün (Pull) — Opsiyonel</div>
+      </div>
+      <div class="day-card rest">
+        <div class="day-name">Paz</div>
+        <div class="day-icon">💤</div>
+        <div class="day-label">Tam Dinlenme</div>
+      </div>
+    </div>
+    <p style="font-size:.75rem;color:var(--muted);margin-top:10px;">💡 Salı dinlenme → Çarşamba halı sahaya tam enerjili gidilir. Bacak günü Cuma'ya alındı → halı sahadan 2 gün sonra gelir, toparlanma tamamdır.</p>
+  </div>
+
+  <!-- ANTRENMAN DETAYLARI -->
+  <div class="section">
+    <div class="section-title">Antrenman Programı — Bilimsel Upper / Lower Split</div>
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab(event,'upperA')">🏋️ Salon A — Upper (Pzt)</button>
+      <button class="tab-btn" onclick="switchTab(event,'lowerB')">🦵 Salon B — Lower (Cum)</button>
+      <button class="tab-btn" onclick="switchTab(event,'pullC')">🔗 Salon C — Pull (Cmt, Opsiyonel)</button>
+      <button class="tab-btn" onclick="switchTab(event,'isinma')">🔥 Isınma Protokolü</button>
+      <button class="tab-btn" onclick="switchTab(event,'progresyon')">📈 Progresif Yüklenme</button>
+    </div>
+
+    <!-- SALON A -->
+    <div id="upperA" class="tab-content active card">
+      <h3>🏋️ SALON A — Upper (Push + Pull Dengeli) · Pazartesi · ~65–75 dk</h3>
+      <p style="font-size:.78rem;color:var(--muted);margin-bottom:14px;">RPE hedefi: bileşikler 7-8, izolasyonlar 8-9 · Bileşikler arası 2-3dk dinlenme · İzolasyonlar arası 60-90sn</p>
+      <div style="overflow-x:auto;">
+        <table style="width:100%;border-collapse:collapse;font-size:.84rem;">
+          <thead>
+            <tr style="color:var(--muted);font-size:.68rem;text-transform:uppercase;letter-spacing:.06em;">
+              <th style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--border);min-width:180px;">Hareket</th>
+              <th style="padding:6px 8px;border-bottom:1px solid var(--border);">Set×Tekrar</th>
+              <th style="padding:6px 8px;border-bottom:1px solid var(--border);">Ağırlık</th>
+              <th style="padding:6px 8px;border-bottom:1px solid var(--border);">Kas Grubu</th>
+              <th style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--border);">Progresyon Notu</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="background:#1c1d2e;">
+              <td colspan="5" style="padding:6px 8px;font-size:.68rem;color:#a78bfa;font-weight:700;text-transform:uppercase;letter-spacing:.07em;">── BİLEŞİK HAREKETLER (Güç Bloğu)</td>
+            </tr>
+            <tr style="border-bottom:1px solid var(--border);">
+              <td style="padding:8px;font-weight:700;">Flat Bench Press (Bar)</td>
+              <td style="padding:8px;text-align:center;color:#a78bfa;font-weight:700;">4 × 6–10</td>
+              <td style="padding:8px;text-align:center;color:#f9ca24;">35–40 kg</td>
+              <td style="padding:8px;text-align:center;font-size:.75rem;color:#c5c9e0;">Göğüs / Triceps</td>
+              <td style="padding:8px;color:var(--muted);font-size:.78rem;">Çift progresyon — tüm setlerde 10 tekrar → +2.5kg</td>
+            </tr>
+            <tr style="border-bottom:1px solid var(--border);">
+              <td style="padding:8px;font-weight:700;">Barbell / DB Row</td>
+              <td style="padding:8px;text-align:center;color:#60a5fa;font-weight:700;">4 × 8–10</td>
+              <td style="padding:8px;text-align:center;color:#f9ca24;">45–50 kg</td>
+              <td style="padding:8px;text-align:center;font-size:.75rem;color:#c5c9e0;">Sırt / Biceps</td>
+              <td style="padding:8px;color:var(--muted);font-size:.78rem;">Push/Pull 1:1 dengesi — omuz sağlığı kritik</td>
+            </tr>
+            <tr style="border-bottom:1px solid var(--border);">
+              <td style="padding:8px;font-weight:700;">Overhead Press (DB)</td>
+              <td style="padding:8px;text-align:center;color:#a78bfa;font-weight:700;">3 × 8–12</td>
+              <td style="padding:8px;text-align:center;color:#f9ca24;">20 kg DB</td>
+              <td style="padding:8px;text-align:center;font-size:.75rem;color:#c5c9e0;">Omuz / Triceps</td>
+              <td style="padding:8px;color:var(--muted);font-size:.78rem;">Büyük bileşik — testosteron salınımı</td>
+            </tr>
+            <tr style="border-bottom:1px solid var(--border);">
+              <td style="padding:8px;font-weight:700;">Lat Pulldown (Geniş Tutuş)</td>
+              <td style="padding:8px;text-align:center;color:#60a5fa;font-weight:700;">3 × 10–12</td>
+              <td style="padding:8px;text-align:center;color:#f9ca24;">37–42 kg</td>
+              <td style="padding:8px;text-align:center;font-size:.75rem;color:#c5c9e0;">Lat / Sırt</td>
+              <td style="padding:8px;color:var(--muted);font-size:.78rem;">Omuz tam açılım — tam ROM kritik</td>
+            </tr>
+            <tr style="background:#1c1d2e;">
+              <td colspan="5" style="padding:6px 8px;font-size:.68rem;color:#a78bfa;font-weight:700;text-transform:uppercase;letter-spacing:.07em;">── İZOLASYON (Hacim Bloğu)</td>
+            </tr>
+            <tr style="border-bottom:1px solid var(--border);">
+              <td style="padding:8px;font-weight:600;">Incline DB Press</td>
+              <td style="padding:8px;text-align:center;color:#a78bfa;">3 × 10–15</td>
+              <td style="padding:8px;text-align:center;color:#f9ca24;">15–17.5 kg</td>
+              <td style="padding:8px;text-align:center;font-size:.75rem;color:#c5c9e0;">Üst Göğüs</td>
+              <td style="padding:8px;color:var(--muted);font-size:.78rem;">RP MEV: göğüs 6 set/hafta — bu 7. set</td>
+            </tr>
+            <tr style="border-bottom:1px solid var(--border);">
+              <td style="padding:8px;font-weight:600;">Cable Lateral Raise</td>
+              <td style="padding:8px;text-align:center;color:#a78bfa;">4 × 15–20</td>
+              <td style="padding:8px;text-align:center;color:#f9ca24;">5–7.5 kg</td>
+              <td style="padding:8px;text-align:center;font-size:.75rem;color:#c5c9e0;">Yan Deltoid</td>
+              <td style="padding:8px;color:var(--muted);font-size:.78rem;">Kablo > dambıl — sabit gerilim boyunca ROM</td>
+            </tr>
+            <tr style="border-bottom:1px solid var(--border);">
+              <td style="padding:8px;font-weight:600;">Face Pull (Kablodan)</td>
+              <td style="padding:8px;text-align:center;color:#60a5fa;">3 × 15–20</td>
+              <td style="padding:8px;text-align:center;color:#f9ca24;">15–20 kg</td>
+              <td style="padding:8px;text-align:center;font-size:.75rem;color:#c5c9e0;">Arka Delt / Rotator</td>
+              <td style="padding:8px;color:var(--muted);font-size:.78rem;">Omuz sağlığı için zorunlu — postür düzeltici</td>
+            </tr>
+            <tr style="border-bottom:1px solid var(--border);">
+              <td style="padding:8px;font-weight:600;">Triceps Pressdown (Halat)</td>
+              <td style="padding:8px;text-align:center;color:#a78bfa;">3 × 12–15</td>
+              <td style="padding:8px;text-align:center;color:#f9ca24;">30–40 kg</td>
+              <td style="padding:8px;text-align:center;font-size:.75rem;color:#c5c9e0;">Triceps (Lateral Baş)</td>
+              <td style="padding:8px;color:var(--muted);font-size:.78rem;">Halat = daha geniş ROM; dirsekler sabit, bilekler nötr</td>
+            </tr>
+            <tr style="border-bottom:1px solid var(--border);">
+              <td style="padding:8px;font-weight:600;">Overhead Triceps Ext. (Tek Kablo)</td>
+              <td style="padding:8px;text-align:center;color:#a78bfa;">3 × 10–12</td>
+              <td style="padding:8px;text-align:center;color:#f9ca24;">15–20 kg</td>
+              <td style="padding:8px;text-align:center;font-size:.75rem;color:#c5c9e0;">Triceps (Uzun Baş)</td>
+              <td style="padding:8px;color:var(--muted);font-size:.78rem;">Uzun baş yalnızca gerilmiş pozisyonda tam aktive olur — en büyük triceps başı</td>
+            </tr>
+            <tr style="border-bottom:1px solid var(--border);">
+              <td style="padding:8px;font-weight:600;">Hammer Curl (Cable veya DB)</td>
+              <td style="padding:8px;text-align:center;color:#60a5fa;">3 × 12–15</td>
+              <td style="padding:8px;text-align:center;color:#f9ca24;">20 kg</td>
+              <td style="padding:8px;text-align:center;font-size:.75rem;color:#c5c9e0;">Biceps (Brachialis)</td>
+              <td style="padding:8px;color:var(--muted);font-size:.78rem;">Brachialis gelişimi kolların kalın görünmesini sağlar + ön kol</td>
+            </tr>
+            <tr style="border-bottom:1px solid var(--border);">
+              <td style="padding:8px;font-weight:600;">Preacher Curl (Makine veya DB)</td>
+              <td style="padding:8px;text-align:center;color:#60a5fa;">3 × 8–12</td>
+              <td style="padding:8px;text-align:center;color:#f9ca24;">15–17.5 kg</td>
+              <td style="padding:8px;text-align:center;font-size:.75rem;color:#c5c9e0;">Biceps (Kısa Baş)</td>
+              <td style="padding:8px;color:var(--muted);font-size:.78rem;">Biceps peak'i — tam uzanım zorunlu; kısaltılmış pozisyonda maximal gerilim</td>
+            </tr>
+            <tr>
+              <td style="padding:8px;font-weight:600;">Incline DB Curl</td>
+              <td style="padding:8px;text-align:center;color:#60a5fa;">2 × 10–12</td>
+              <td style="padding:8px;text-align:center;color:#f9ca24;">10–12.5 kg</td>
+              <td style="padding:8px;text-align:center;font-size:.75rem;color:#c5c9e0;">Biceps (Uzun Baş)</td>
+              <td style="padding:8px;color:var(--muted);font-size:.78rem;">Gerilmiş pozisyonda biceps uzun başı — dambıl arkada düşük, tam ROM</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-top:14px;">
+        <div style="background:#1c1d2e;border-radius:8px;padding:10px;text-align:center;font-size:.75rem;">
+          <div style="color:var(--muted);">Toplam Set</div>
+          <div style="font-size:1.2rem;font-weight:700;color:#a78bfa;">38 set</div>
+        </div>
+        <div style="background:#1c1d2e;border-radius:8px;padding:10px;text-align:center;font-size:.75rem;">
+          <div style="color:var(--muted);">Süre</div>
+          <div style="font-size:1.2rem;font-weight:700;color:#f9ca24;">~80 dk</div>
+        </div>
+        <div style="background:#1c1d2e;border-radius:8px;padding:10px;text-align:center;font-size:.75rem;">
+          <div style="color:var(--muted);">Biceps (haftalık)</div>
+          <div style="font-size:1.2rem;font-weight:700;color:#43e97b;">8 set ✓</div>
+        </div>
+        <div style="background:#1c1d2e;border-radius:8px;padding:10px;text-align:center;font-size:.75rem;">
+          <div style="color:var(--muted);">Triceps (haftalık)</div>
+          <div style="font-size:1.2rem;font-weight:700;color:#43e97b;">6 set ✓</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SALON B -->
+    <div id="lowerB" class="tab-content card">
+      <h3>🦵 SALON B — Lower + Core · Cuma · ~65–75 dk</h3>
+      <p style="font-size:.78rem;color:var(--muted);margin-bottom:14px;">RPE hedefi: ana hareketler 7-8 · Core hareketleri tam yorgunluk · Bileşikler arası 2-3dk dinlenme</p>
+      <div style="overflow-x:auto;">
+        <table style="width:100%;border-collapse:collapse;font-size:.84rem;">
+          <thead>
+            <tr style="color:var(--muted);font-size:.68rem;text-transform:uppercase;letter-spacing:.06em;">
+              <th style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--border);min-width:200px;">Hareket</th>
+              <th style="padding:6px 8px;border-bottom:1px solid var(--border);">Set×Tekrar</th>
+              <th style="padding:6px 8px;border-bottom:1px solid var(--border);">Ağırlık</th>
+              <th style="padding:6px 8px;border-bottom:1px solid var(--border);">Kas Grubu</th>
+              <th style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--border);">Progresyon Notu</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="background:#1c1d2e;">
+              <td colspan="5" style="padding:6px 8px;font-size:.68rem;color:#4ade80;font-weight:700;text-transform:uppercase;letter-spacing:.07em;">── BİLEŞİK HAREKETLER (Güç Bloğu)</td>
+            </tr>
+            <tr style="border-bottom:1px solid var(--border);">
+              <td style="padding:8px;font-weight:700;">Leg Press (Yatay Makine)</td>
+              <td style="padding:8px;text-align:center;color:#4ade80;font-weight:700;">4 × 8–12</td>
+              <td style="padding:8px;text-align:center;color:#f9ca24;">65 kg → 80 kg</td>
+              <td style="padding:8px;text-align:center;font-size:.75rem;color:#c5c9e0;">Quad / Glut</td>
+              <td style="padding:8px;color:var(--muted);font-size:.78rem;">Haftada 5kg artır. 12×4 → +5kg. 4 haftada squat'a geç.</td>
+            </tr>
+            <tr style="border-bottom:1px solid var(--border);">
+              <td style="padding:8px;font-weight:700;">Walking Lunge (Dambıl)</td>
+              <td style="padding:8px;text-align:center;color:#4ade80;font-weight:700;">3 × 12 adım</td>
+              <td style="padding:8px;text-align:center;color:#f9ca24;">2 × 10–16 kg</td>
+              <td style="padding:8px;text-align:center;font-size:.75rem;color:#c5c9e0;">Quad / Glut / Hamstring</td>
+              <td style="padding:8px;color:var(--muted);font-size:.78rem;">Dambıl iki yanda, uzun adım at, diz yere değmeden dur. Halı saha sprint mekaniğini direkt taklit eder.</td>
+            </tr>
+            <tr style="border-bottom:1px solid var(--border);">
+              <td style="padding:8px;font-weight:700;">Goblet Squat (Dambıl)</td>
+              <td style="padding:8px;text-align:center;color:#4ade80;font-weight:700;">3 × 10–12</td>
+              <td style="padding:8px;text-align:center;color:#f9ca24;">16–24 kg</td>
+              <td style="padding:8px;text-align:center;font-size:.75rem;color:#c5c9e0;">Quad / Glut / Core</td>
+              <td style="padding:8px;color:var(--muted);font-size:.78rem;">Dambılı göğüste tut — dik durmak zorunda kalırsın, form kendiliğinden düzelir. Squat'a en iyi giriş.</td>
+            </tr>
+            <tr style="background:#1c1d2e;">
+              <td colspan="5" style="padding:6px 8px;font-size:.68rem;color:#4ade80;font-weight:700;text-transform:uppercase;letter-spacing:.07em;">── İZOLASYON (Hacim Bloğu)</td>
+            </tr>
+            <tr style="border-bottom:1px solid var(--border);">
+              <td style="padding:8px;font-weight:600;">Lying Leg Curl (Makine)</td>
+              <td style="padding:8px;text-align:center;color:#4ade80;">3 × 10–12</td>
+              <td style="padding:8px;text-align:center;color:#f9ca24;">35–40 kg</td>
+              <td style="padding:8px;text-align:center;font-size:.75rem;color:#c5c9e0;">Hamstring</td>
+              <td style="padding:8px;color:var(--muted);font-size:.78rem;">Kasılmış konumda 1sn tut — peak contraction</td>
+            </tr>
+            <tr style="border-bottom:1px solid var(--border);">
+              <td style="padding:8px;font-weight:600;">Leg Extension (Makine)</td>
+              <td style="padding:8px;text-align:center;color:#4ade80;">3 × 12–15</td>
+              <td style="padding:8px;text-align:center;color:#f9ca24;">60–70 kg</td>
+              <td style="padding:8px;text-align:center;font-size:.75rem;color:#c5c9e0;">Quad (VMO)</td>
+              <td style="padding:8px;color:var(--muted);font-size:.78rem;">Full ROM — diz sağlığı için tam açılım</td>
+            </tr>
+            <tr style="border-bottom:1px solid var(--border);">
+              <td style="padding:8px;font-weight:600;">Standing Calf Raise</td>
+              <td style="padding:8px;text-align:center;color:#4ade80;">4 × 15–20</td>
+              <td style="padding:8px;text-align:center;color:#f9ca24;">Vücut ağ.</td>
+              <td style="padding:8px;text-align:center;font-size:.75rem;color:#c5c9e0;">Gastrocnemius</td>
+              <td style="padding:8px;color:var(--muted);font-size:.78rem;">Aşil altında tam iniş — yavaş eccentric (3sn)</td>
+            </tr>
+            <tr style="background:#1c1d2e;">
+              <td colspan="5" style="padding:6px 8px;font-size:.68rem;color:#f9ca24;font-weight:700;text-transform:uppercase;letter-spacing:.07em;">── CORE (Anti-Rotasyon + Fleksiyon)</td>
+            </tr>
+            <tr style="border-bottom:1px solid var(--border);">
+              <td style="padding:8px;font-weight:600;">Hanging Leg Raise</td>
+              <td style="padding:8px;text-align:center;color:#f9ca24;">3 × 10–15</td>
+              <td style="padding:8px;text-align:center;color:#f9ca24;">—</td>
+              <td style="padding:8px;text-align:center;font-size:.75rem;color:#c5c9e0;">Alt Core / Hip Flexor</td>
+              <td style="padding:8px;color:var(--muted);font-size:.78rem;">Bacaklar düz → diz bükük → ağırlıklı vers. sıralaması</td>
+            </tr>
+            <tr style="border-bottom:1px solid var(--border);">
+              <td style="padding:8px;font-weight:600;">Cable Crunch</td>
+              <td style="padding:8px;text-align:center;color:#f9ca24;">3 × 15</td>
+              <td style="padding:8px;text-align:center;color:#f9ca24;">20–30 kg</td>
+              <td style="padding:8px;text-align:center;font-size:.75rem;color:#c5c9e0;">Rektus Abdominis</td>
+              <td style="padding:8px;color:var(--muted);font-size:.78rem;">Progresif yüklenebilen tek core hareketi</td>
+            </tr>
+            <tr>
+              <td style="padding:8px;font-weight:600;">Plank (Statik)</td>
+              <td style="padding:8px;text-align:center;color:#f9ca24;">2 × 60 sn</td>
+              <td style="padding:8px;text-align:center;color:#f9ca24;">—</td>
+              <td style="padding:8px;text-align:center;font-size:.75rem;color:#c5c9e0;">Core Stabilizasyon</td>
+              <td style="padding:8px;color:var(--muted);font-size:.78rem;">Kalça ne yukarı ne aşağı — düz köprü</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-top:14px;">
+        <div style="background:#1c1d2e;border-radius:8px;padding:10px;text-align:center;font-size:.75rem;">
+          <div style="color:var(--muted);">Toplam Set</div>
+          <div style="font-size:1.2rem;font-weight:700;color:#4ade80;">32 set</div>
+        </div>
+        <div style="background:#1c1d2e;border-radius:8px;padding:10px;text-align:center;font-size:.75rem;">
+          <div style="color:var(--muted);">Süre</div>
+          <div style="font-size:1.2rem;font-weight:700;color:#f9ca24;">~70 dk</div>
+        </div>
+        <div style="background:#1c1d2e;border-radius:8px;padding:10px;text-align:center;font-size:.75rem;">
+          <div style="color:var(--muted);">Quad (haftalık)</div>
+          <div style="font-size:1.2rem;font-weight:700;color:#43e97b;">10 set ✓</div>
+        </div>
+        <div style="background:#1c1d2e;border-radius:8px;padding:10px;text-align:center;font-size:.75rem;">
+          <div style="color:var(--muted);">Hamstring (haftalık)</div>
+          <div style="font-size:1.2rem;font-weight:700;color:#43e97b;">7 set ✓</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SALON C -->
+    <div id="pullC" class="tab-content card">
+      <h3>🔗 SALON C — Pull + Çift Split · Cumartesi (Opsiyonel 3. Gün)</h3>
+      <div class="alert" style="margin-bottom:14px;">Haftada 3'e çıkabildiğinde bu güne geç. Bu gün mevcut Upper A'dan eksik kalan pull hacmini tamamlar ve kas grubu başına haftalık set sayısını MAV'a taşır.</div>
+      <div style="overflow-x:auto;">
+        <table style="width:100%;border-collapse:collapse;font-size:.84rem;">
+          <thead>
+            <tr style="color:var(--muted);font-size:.68rem;text-transform:uppercase;letter-spacing:.06em;">
+              <th style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--border);">Hareket</th>
+              <th style="padding:6px 8px;border-bottom:1px solid var(--border);">Set×Tekrar</th>
+              <th style="padding:6px 8px;border-bottom:1px solid var(--border);">Ağırlık</th>
+              <th style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--border);">Not</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="border-bottom:1px solid var(--border);">
+              <td style="padding:8px;font-weight:700;">Deadlift (Barbell) — Konvansiyonel</td>
+              <td style="padding:8px;text-align:center;color:#60a5fa;font-weight:700;">4 × 4–6</td>
+              <td style="padding:8px;text-align:center;color:#f9ca24;">60–80 kg</td>
+              <td style="padding:8px;color:var(--muted);font-size:.78rem;">Tüm vücut hareketi — testosteron & GH patlayışı. Lineer prog: her seferinde +2.5-5kg.</td>
+            </tr>
+            <tr style="border-bottom:1px solid var(--border);">
+              <td style="padding:8px;font-weight:600;">Pull-Up / Lat Pulldown (Geniş)</td>
+              <td style="padding:8px;text-align:center;color:#60a5fa;">4 × 8–10</td>
+              <td style="padding:8px;text-align:center;color:#f9ca24;">BW / 42 kg</td>
+              <td style="padding:8px;color:var(--muted);font-size:.78rem;">Pull-up yapamazsan pulldown — hedef pull-up'a geçmek</td>
+            </tr>
+            <tr style="border-bottom:1px solid var(--border);">
+              <td style="padding:8px;font-weight:600;">Close Grip Lat Pulldown</td>
+              <td style="padding:8px;text-align:center;color:#60a5fa;">3 × 10–12</td>
+              <td style="padding:8px;text-align:center;color:#f9ca24;">37–42 kg</td>
+              <td style="padding:8px;color:var(--muted);font-size:.78rem;">Alt lat gelişimi</td>
+            </tr>
+            <tr style="border-bottom:1px solid var(--border);">
+              <td style="padding:8px;font-weight:600;">Cable Row (Geniş Tutuş)</td>
+              <td style="padding:8px;text-align:center;color:#60a5fa;">3 × 10</td>
+              <td style="padding:8px;text-align:center;color:#f9ca24;">45 kg</td>
+              <td style="padding:8px;color:var(--muted);font-size:.78rem;">Sırt kalınlığı — dirsek gövdeye çekilir</td>
+            </tr>
+            <tr style="border-bottom:1px solid var(--border);">
+              <td style="padding:8px;font-weight:600;">Preacher Curl (DB veya Bar)</td>
+              <td style="padding:8px;text-align:center;color:#60a5fa;">3 × 8–10</td>
+              <td style="padding:8px;text-align:center;color:#f9ca24;">15 kg</td>
+              <td style="padding:8px;color:var(--muted);font-size:.78rem;">Biceps peak — tam uzanım gerekli</td>
+            </tr>
+            <tr style="border-bottom:1px solid var(--border);">
+              <td style="padding:8px;font-weight:600;">Incline DB Curl</td>
+              <td style="padding:8px;text-align:center;color:#60a5fa;">3 × 10–12</td>
+              <td style="padding:8px;text-align:center;color:#f9ca24;">10–12.5 kg</td>
+              <td style="padding:8px;color:var(--muted);font-size:.78rem;">Uzun baş (dış biceps) — sırt arkada yatık bank</td>
+            </tr>
+            <tr>
+              <td style="padding:8px;font-weight:600;">Face Pull (Kablo)</td>
+              <td style="padding:8px;text-align:center;color:#60a5fa;">3 × 15–20</td>
+              <td style="padding:8px;text-align:center;color:#f9ca24;">15–20 kg</td>
+              <td style="padding:8px;color:var(--muted);font-size:.78rem;">Arka delt + rotator cuff — omuz sağlığı</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ISINMA PROTOKOLÜ -->
+    <div id="isinma" class="tab-content card">
+      <h3>🔥 Her Antrenman Öncesi Isınma Protokolü (10–12 dk)</h3>
+      <p style="font-size:.78rem;color:var(--muted);margin-bottom:14px;">Araştırmalar gösteriyor: yapılandırılmış ısınma performansı %8–12 artırıyor ve sakatlık riskini %50 azaltıyor.</p>
+      <div>
+        <div class="warmup-item">
+          <div class="warmup-time">0–3 dk</div>
+          <div>
+            <strong>Genel Isınma</strong> — koşu bandında yürüyüş / hafif koşu (tempo 5-6/10). Vücut ısısını yükseltir, kan akışını arttırır.
+          </div>
+        </div>
+        <div class="warmup-item">
+          <div class="warmup-time">3–6 dk</div>
+          <div>
+            <strong>Dinamik Mobilite</strong> — Arm circles (10×), Leg swings (10× / bacak), Hip 90/90 rotasyon (8×), Thoracic spine rotation (10×), Shoulder dislocations (10×).
+          </div>
+        </div>
+        <div class="warmup-item">
+          <div class="warmup-time">6–9 dk</div>
+          <div>
+            <strong>Aktivasyon Seti 1</strong> — İlk ana hareketi (Bench / Leg Press) <strong>%50 ağırlıkla 1×15 tekrar</strong>. Nöromüsküler aktivasyon.
+          </div>
+        </div>
+        <div class="warmup-item">
+          <div class="warmup-time">9–11 dk</div>
+          <div>
+            <strong>Aktivasyon Seti 2</strong> — Aynı hareketi <strong>%75 ağırlıkla 1×8 tekrar</strong>. İş setlerine tam hazırlık.
+          </div>
+        </div>
+        <div class="warmup-item">
+          <div class="warmup-time">11–12 dk</div>
+          <div>
+            <strong>Bireysel Eksiklik Aktivasyonu</strong> — Masabaşı çalışma nedeniyle özellikle: <em>Glute Bridge 2×15</em> (kalça aktive) + <em>Band Pull-Apart 2×20</em> (arka delt/rotator aktive).
+          </div>
+        </div>
+      </div>
+      <div class="prog-box" style="margin-top:16px;">
+        <h4>💡 Antrenman Sonrası Soğuma (5 dk)</h4>
+        <div class="prog-step">
+          <div class="prog-num">1</div>
+          <div>Quadriceps germe: 30sn×2 / bacak — duvar desteğiyle</div>
+        </div>
+        <div class="prog-step">
+          <div class="prog-num">2</div>
+          <div>Hip flexor lunge germe: 45sn×2 / taraf — masabaşı kasılmasını açar</div>
+        </div>
+        <div class="prog-step">
+          <div class="prog-num">3</div>
+          <div>Göğüs açma (kapı çerçevesinde): 30sn×2 — bench sonrası</div>
+        </div>
+        <div class="prog-step">
+          <div class="prog-num">4</div>
+          <div>Child's pose: 60sn — sırt kaslarını uzatır</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PROGRESİF YÜKLENME -->
+    <div id="progresyon" class="tab-content card">
+      <h3>📈 Progresif Yüklenme Sistemi — Çift Progresyon Metodu</h3>
+      <p style="font-size:.78rem;color:var(--muted);margin-bottom:14px;">Araştırma: Mekanik gerilim kas büyümesinin birincil tetikleyicisidir. Progresif yüklenme olmadan büyüme durur — bu planın en önemli kuralıdır.</p>
+
+      <div class="prog-box">
+        <h4>Çift Progresyon Nasıl Çalışır? (Örn: Bench Press 4×6-10)</h4>
+        <div class="prog-step">
+          <div class="prog-num">1</div>
+          <div><strong>Hedef aralığının alt sınırından başla:</strong> 40kg ile 4×6 tekrar. RPE 7-8 hissettirmeli (2-3 tekrar kapasiten kalsın).</div>
+        </div>
+        <div class="prog-step">
+          <div class="prog-num">2</div>
+          <div><strong>Her sette tekrar ekle:</strong> 40kg → 4×7, sonraki hafta 4×8, 4×9...</div>
+        </div>
+        <div class="prog-step">
+          <div class="prog-num">3</div>
+          <div><strong>Tüm setlerde üst sınıra ulaştığında:</strong> 40kg × 4×10 → <strong>+2.5kg ekle</strong> ve alt sınıra dön: 42.5kg × 4×6.</div>
+        </div>
+        <div class="prog-step">
+          <div class="prog-num">4</div>
+          <div><strong>Platoya girersen:</strong> Bir hafta aynı ağırlık → tempo değiştir (3 saniyelik eccentric) → volüm arttır (+1 set) → ancak sonra ağırlık artır.</div>
+        </div>
+      </div>
+
+      <div class="prog-box" style="margin-top:14px;">
+        <h4>Hevy App ile Takip — Zorunlu</h4>
+        <div class="prog-step">
+          <div class="prog-num">✓</div>
+          <div>Her antrenmanı Hevy'e kaydet. Progresyonu grafikte gör.</div>
+        </div>
+        <div class="prog-step">
+          <div class="prog-num">✓</div>
+          <div>Bir harekette 2 ardışık sette ilerleme yoksa → sonraki haftaya deload uygula (%70 ağırlık, aynı hacim).</div>
+        </div>
+        <div class="prog-step">
+          <div class="prog-num">✓</div>
+          <div>Her 4 haftada ölçüm al: kilo + bel + göğüs + kol + baldır çevresi. Kilo dursa bile bel küçülüyorsa rekomp çalışıyordur.</div>
+        </div>
+      </div>
+
+      <div style="margin-top:16px;">
+        <p style="font-size:.82rem;font-weight:700;margin-bottom:10px;color:var(--text);">Ağırlık Artış Rehberi (Bir sonraki adım)</p>
+        <div style="overflow-x:auto;">
+          <table style="width:100%;border-collapse:collapse;font-size:.8rem;">
+            <thead>
+              <tr style="color:var(--muted);font-size:.68rem;text-transform:uppercase;">
+                <th style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--border);">Hareket Tipi</th>
+                <th style="padding:6px 8px;border-bottom:1px solid var(--border);">Artış Miktarı</th>
+                <th style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--border);">Ne Zaman</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr style="border-bottom:1px solid var(--border);">
+                <td style="padding:7px 8px;font-weight:600;">Barbell (Bench, Row, Deadlift)</td>
+                <td style="padding:7px 8px;text-align:center;color:#43e97b;">+2.5 kg</td>
+                <td style="padding:7px 8px;color:var(--muted);">Tüm setlerde rep aralığı üstüne çıkınca</td>
+              </tr>
+              <tr style="border-bottom:1px solid var(--border);">
+                <td style="padding:7px 8px;font-weight:600;">Dambıl Hareketleri</td>
+                <td style="padding:7px 8px;text-align:center;color:#43e97b;">+2 × 2.5 kg</td>
+                <td style="padding:7px 8px;color:var(--muted);">Her iki elde de rep aralığı üstüne çıkınca</td>
+              </tr>
+              <tr style="border-bottom:1px solid var(--border);">
+                <td style="padding:7px 8px;font-weight:600;">Kablo / Makine</td>
+                <td style="padding:7px 8px;text-align:center;color:#43e97b;">+5 kg</td>
+                <td style="padding:7px 8px;color:var(--muted);">Bir sonraki plate mevcut değilse +1 set ekle</td>
+              </tr>
+              <tr>
+                <td style="padding:7px 8px;font-weight:600;">Core Hareketleri</td>
+                <td style="padding:7px 8px;text-align:center;color:#43e97b;">+2-3 tekrar</td>
+                <td style="padding:7px 8px;color:var(--muted);">Hedef rep'e ulaştığında ağırlık ekle veya varyasyon zorlaştır</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- HAFTALIK HACİM ÖZET -->
+  <div class="section">
+    <div class="section-title">Haftalık Hacim Kontrol Paneli (RP Landmarks)</div>
+    <div class="card">
+      <p style="font-size:.78rem;color:var(--muted);margin-bottom:16px;">Renaissance Periodization'ın kanıta dayalı MEV/MAV değerleri. Yeşil = MEV'e ulaşıldı. 2 gün salon + 1 halı saha ile bu değerler karşılanmaktadır.</p>
+      <table class="vol-table">
+        <thead>
+          <tr>
+            <th>Kas Grubu</th>
+            <th style="text-align:center;">MEV (min)</th>
+            <th style="text-align:center;">Planın Seti</th>
+            <th style="text-align:center;">MAV Hedef</th>
+            <th>Durum</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="font-weight:600;">Sırt (Back)</td>
+            <td style="text-align:center;color:var(--muted);">10 set</td>
+            <td style="text-align:center;font-weight:700;color:#43e97b;">10–14 set</td>
+            <td style="text-align:center;color:var(--muted);">11–19</td>
+            <td><div class="vol-bar-wrap"><div class="vol-bar-bg"><div class="vol-bar-fill" style="width:70%;background:linear-gradient(90deg,#43e97b,#38f9d7)"></div></div><span class="vol-sets">✓ MEV</span></div></td>
+          </tr>
+          <tr>
+            <td style="font-weight:600;">Göğüs (Chest)</td>
+            <td style="text-align:center;color:var(--muted);">6 set</td>
+            <td style="text-align:center;font-weight:700;color:#43e97b;">7 set</td>
+            <td style="text-align:center;color:var(--muted);">7–19</td>
+            <td><div class="vol-bar-wrap"><div class="vol-bar-bg"><div class="vol-bar-fill" style="width:45%;background:linear-gradient(90deg,#43e97b,#38f9d7)"></div></div><span class="vol-sets">✓ MAV alt</span></div></td>
+          </tr>
+          <tr>
+            <td style="font-weight:600;">Yan Delt (Side)</td>
+            <td style="text-align:center;color:var(--muted);">8 set</td>
+            <td style="text-align:center;font-weight:700;color:#43e97b;">4 set</td>
+            <td style="text-align:center;color:var(--muted);">9–24</td>
+            <td><div class="vol-bar-wrap"><div class="vol-bar-bg"><div class="vol-bar-fill" style="width:30%;background:#fa8231"></div></div><span class="vol-sets" style="color:#fa8231;">▲ Arttır</span></div></td>
+          </tr>
+          <tr>
+            <td style="font-weight:600;">Biceps</td>
+            <td style="text-align:center;color:var(--muted);">8 set</td>
+            <td style="text-align:center;font-weight:700;color:#43e97b;">8 set</td>
+            <td style="text-align:center;color:var(--muted);">9–19</td>
+            <td><div class="vol-bar-wrap"><div class="vol-bar-bg"><div class="vol-bar-fill" style="width:50%;background:linear-gradient(90deg,#43e97b,#38f9d7)"></div></div><span class="vol-sets">✓ MEV</span></div></td>
+          </tr>
+          <tr>
+            <td style="font-weight:600;">Triceps</td>
+            <td style="text-align:center;color:var(--muted);">6 set</td>
+            <td style="text-align:center;font-weight:700;color:#43e97b;">6 set</td>
+            <td style="text-align:center;color:var(--muted);">7–19</td>
+            <td><div class="vol-bar-wrap"><div class="vol-bar-bg"><div class="vol-bar-fill" style="width:45%;background:linear-gradient(90deg,#43e97b,#38f9d7)"></div></div><span class="vol-sets">✓ MEV</span></div></td>
+          </tr>
+          <tr>
+            <td style="font-weight:600;">Quadriceps</td>
+            <td style="text-align:center;color:var(--muted);">8 set</td>
+            <td style="text-align:center;font-weight:700;color:#43e97b;">10 set</td>
+            <td style="text-align:center;color:var(--muted);">9–17</td>
+            <td><div class="vol-bar-wrap"><div class="vol-bar-bg"><div class="vol-bar-fill" style="width:65%;background:linear-gradient(90deg,#43e97b,#38f9d7)"></div></div><span class="vol-sets">✓ MAV</span></div></td>
+          </tr>
+          <tr>
+            <td style="font-weight:600;">Hamstring</td>
+            <td style="text-align:center;color:var(--muted);">4 set</td>
+            <td style="text-align:center;font-weight:700;color:#43e97b;">7 set</td>
+            <td style="text-align:center;color:var(--muted);">5–12</td>
+            <td><div class="vol-bar-wrap"><div class="vol-bar-bg"><div class="vol-bar-fill" style="width:65%;background:linear-gradient(90deg,#43e97b,#38f9d7)"></div></div><span class="vol-sets">✓ MAV</span></div></td>
+          </tr>
+          <tr>
+            <td style="font-weight:600;">Core / Abs</td>
+            <td style="text-align:center;color:var(--muted);">0–6 set</td>
+            <td style="text-align:center;font-weight:700;color:#43e97b;">8 set</td>
+            <td style="text-align:center;color:var(--muted);">7–24</td>
+            <td><div class="vol-bar-wrap"><div class="vol-bar-bg"><div class="vol-bar-fill" style="width:40%;background:linear-gradient(90deg,#43e97b,#38f9d7)"></div></div><span class="vol-sets">✓ MAV</span></div></td>
+          </tr>
+        </tbody>
+      </table>
+      <p style="font-size:.73rem;color:var(--muted);margin-top:10px;">💡 Yan delt 8 setten az — lateral raise setlerini 4'ten 6'ya çıkarmak yeterli. 3. gün (Pull C) eklenince tüm gruplar MAV aralığına girer.</p>
+    </div>
+  </div>
+
+  <!-- BESLENME PLANI -->
+  <div class="section">
+    <div class="section-title">Beslenme Planı</div>
+    <div class="grid2">
+
+      <!-- KALORI & MAKRO -->
+      <div class="card">
+        <h3>🎯 Rekomp Makro Hedefleri (Günlük)</h3>
+        <div style="margin-bottom:18px;">
+          <div class="macro-bar-wrap">
+            <div class="macro-row">
+              <span>🥩 Protein</span>
+              <span style="color:#4ade80"><strong>215–230 g</strong></span>
+            </div>
+            <div class="macro-bar-bg"><div class="macro-bar-fill" style="width:72%;background:linear-gradient(90deg,#43e97b,#38f9d7)"></div></div>
+            <div style="font-size:.68rem;color:var(--muted);margin-top:3px;">2.3 g/kg · PubMed 2016 rekomp araştırması doğrulandı</div>
+          </div>
+          <div class="macro-bar-wrap" style="margin-top:12px;">
+            <div class="macro-row">
+              <span>🍚 Karbonhidrat</span>
+              <span style="color:#f9ca24"><strong>255–275 g</strong></span>
+            </div>
+            <div class="macro-bar-bg"><div class="macro-bar-fill" style="width:45%;background:linear-gradient(90deg,#f9ca24,#f0932b)"></div></div>
+            <div style="font-size:.68rem;color:var(--muted);margin-top:3px;">Antrenman günleri üst sınır · Dinlenme günleri alt sınır</div>
+          </div>
+          <div class="macro-bar-wrap" style="margin-top:12px;">
+            <div class="macro-row">
+              <span>🥑 Yağ</span>
+              <span style="color:#a78bfa"><strong>70–85 g</strong></span>
+            </div>
+            <div class="macro-bar-bg"><div class="macro-bar-fill" style="width:30%;background:linear-gradient(90deg,#a78bfa,#6c63ff)"></div></div>
+            <div style="font-size:.68rem;color:var(--muted);margin-top:3px;">Testosteron sentezi için min. 0.7 g/kg gerekli (%20 yağ alt sınır)</div>
+          </div>
+        </div>
+        <div class="calorie-box">
+          <div class="big-num">~2 750</div>
+          <div class="sub">kcal / gün — bakım kalorisi (TDEE -150)</div>
+        </div>
+        <p style="font-size:.72rem;color:var(--muted);margin-top:10px;">💡 Kilo değişimi 4 haftada izle. 1kg'dan fazla düştüyse 100 kcal ekle. Kilo artıyorsa 100 kcal azalt.</p>
+      </div>
+
+      <!-- GÜNLÜK ÖĞÜN PLANI -->
+      <div class="card">
+        <h3>🕐 Günlük Öğün Düzeni (3+1)</h3>
+        <div class="meal">
+          <div class="meal-time">07:30</div>
+          <div class="meal-content">
+            <h4>Kahvaltı — Güçlü Başlangıç</h4>
+            <p>4–5 yumurta (2 tam + 2–3 beyaz) · tam buğday ekmek 2 dilim · avokado ya da zeytinyağı · peynir · domates/salatalık · 1 avuç fındık/badem</p>
+          </div>
+        </div>
+        <div class="meal">
+          <div class="meal-time">12:30</div>
+          <div class="meal-content">
+            <h4>Öğle Arası Öğün — Enerji Köprüsü</h4>
+            <p>Yoğurt (tam yağlı 200g) + yulaf 50g + muz + bir kaşık bal · VEYA: lor peyniri + meyve + fındık</p>
+          </div>
+        </div>
+        <div class="meal">
+          <div class="meal-time">19:00</div>
+          <div class="meal-content">
+            <h4>Akşam Yemeği — Ana Öğün</h4>
+            <p>150–200g kırmızı et / tavuk / balık · pirinç veya makarna 150g pişmiş · bol sebze (brokoli, ıspanak) · zeytinyağı sosu</p>
+          </div>
+        </div>
+        <div class="meal">
+          <div class="meal-time">21:30</div>
+          <div class="meal-content">
+            <h4>Gece Protein Öğünü</h4>
+            <p>Süzme yoğurt 200g (kazein proteini gibi yavaş sindirilir) + tarçın + 1 avuç fındık · Uyku öncesi kas büyümesini destekler</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TESTOSTERON OPTIMIZASYONU -->
+  <div class="section">
+    <div class="section-title">Testosteron Optimizasyonu</div>
+    <div class="alert">
+      ⚠️ Eğer testosteron problemi medikal olarak doğrulanmışsa mutlaka bir endokrinolog ile çalış. Aşağıdakiler doğal optimizasyonu destekler ama tıbbi tedavinin yerini tutmaz.
+    </div>
+    <div class="tip-grid">
+      <div class="tip-card">
+        <div class="tip-icon">🏋️</div>
+        <h4>Bileşik Hareketler</h4>
+        <p>Squat, Deadlift, Bench Press ve OHP en yüksek testosteron & büyüme hormonu salınımını tetikler. Her hafta bunları ihmal etme.</p>
+      </div>
+      <div class="tip-card">
+        <div class="tip-icon">😴</div>
+        <h4>Uyku Kalitesi</h4>
+        <p>Testosteronun ~%70'i gece salgılanır. 7–9 saat kesintisiz uyku hedefle. Yatmadan 1 saat önce ekran ışığını kıs.</p>
+      </div>
+      <div class="tip-card">
+        <div class="tip-icon">🥩</div>
+        <h4>Çinko & D Vitamini</h4>
+        <p>Kırmızı et, istiridye, kabak çekirdeği (çinko). Haftada 2-3 kez güneş ışığı + yağlı balık (D vitamini). Gerekirse takviye al.</p>
+      </div>
+      <div class="tip-card">
+        <div class="tip-icon">🥑</div>
+        <h4>Sağlıklı Yağlar</h4>
+        <p>Zeytinyağı, avokado, fındık, yumurta sarısı. Testosteron kolesterolden üretilir — yağı düşman görme.</p>
+      </div>
+      <div class="tip-card">
+        <div class="tip-icon">🧘</div>
+        <h4>Stres Yönetimi</h4>
+        <p>Kortizol yükseldikçe testosteron düşer. Günde 10dk nefes egzersizi veya meditasyon dene. Yürüyüş de kortizolle savaşır.</p>
+      </div>
+      <div class="tip-card">
+        <div class="tip-icon">🍷</div>
+        <h4>Alkol & Şeker</h4>
+        <p>Alkol testosteron üretimini doğrudan baskılar. Şeker insülin dalgalanması yaratır. İkisini de minimize et.</p>
+      </div>
+      <div class="tip-card">
+        <div class="tip-icon">🌿</div>
+        <h4>Doğal Takviyeler</h4>
+        <p><strong>D3 Vitamini</strong> (2000–4000 IU), <strong>Magnezyum Glisinat</strong> (400mg gece), <strong>Çinko</strong> (25–30mg) — güvenli ve etkili üçlü.</p>
+      </div>
+      <div class="tip-card">
+        <div class="tip-icon">💧</div>
+        <h4>Hidrasyon</h4>
+        <p>Günde en az 2.5–3 litre su. Dehidrasyon kortizol artışına yol açar. Antrenman öncesi/sonrası elektrolit de eklenebilir.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- GÜNLÜK RUTIN (Masa başı için) -->
+  <div class="section">
+    <div class="section-title">Masa Başı Çalışan İçin Günlük Hareket Rutini</div>
+    <div class="grid2">
+      <div class="card">
+        <h3>⏰ Her Saat Başı (Pomodoro Hareketi)</h3>
+        <ul>
+          <li><div class="dot" style="background:var(--green)"></div>5 dakikada bir kalk, ayakta dur veya yürü</li>
+          <li><div class="dot" style="background:var(--green)"></div>10 squat veya 10 kalça açma hareketi yap</li>
+          <li><div class="dot" style="background:var(--green)"></div>Omuz çevirme, boyun germe egzersizleri</li>
+          <li><div class="dot" style="background:var(--green)"></div>Mümkünse standing desk kullan</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>🌅 Sabah Rutini (15dk)</h3>
+        <ul>
+          <li><div class="dot" style="background:var(--yellow)"></div>Uyanır uyanmaz 1 bardak su içi</li>
+          <li><div class="dot" style="background:var(--yellow)"></div>5dk dinamik stretching (hip flexor, omuz)</li>
+          <li><div class="dot" style="background:var(--yellow)"></div>5dk nefes / güneşe çık (D vitamini)</li>
+          <li><div class="dot" style="background:var(--yellow)"></div>5dk yürüyüş veya hafif mobilite çalışması</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAKVIYE -->
+  <div class="section">
+    <div class="section-title">Öncelikli Takviyeler (Öneri)</div>
+    <div class="card">
+      <ul>
+        <li><div class="dot" style="background:#6c63ff"></div><div><strong>Whey Protein</strong> — Eğer günlük 190g proteini yemekle karşılayamıyorsan. Antrenman sonrası 1 servis (25–30g).</div></li>
+        <li><div class="dot" style="background:#43e97b"></div><div><strong>Kreatin Monohidrat</strong> — 5g/gün, zamansız. Güç, kas hacmi ve performans için kanıtlanmış #1 takviye.</div></li>
+        <li><div class="dot" style="background:#f9ca24"></div><div><strong>D3 + K2 Vitamini</strong> — 2000–4000 IU D3 / gün. Testosteron, bağışıklık, kemik sağlığı.</div></li>
+        <li><div class="dot" style="background:#fa8231"></div><div><strong>Magnezyum Glisinat</strong> — 300–400mg gece. Uyku kalitesi + testosteron + kas toparlanması.</div></li>
+        <li><div class="dot" style="background:#ff6584"></div><div><strong>Omega-3 (Balık Yağı)</strong> — 2g EPA+DHA/gün. İnflamasyon düşürür, hormon dengesine katkı sağlar.</div></li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- 12 HAFTALIK HEDEF -->
+  <div class="section">
+    <div class="section-title">12 Haftalık Periodizasyon — 3 Faz</div>
+    <div class="grid2">
+      <div class="card">
+        <h3>📅 FAZ 1 · Hafta 1–4 — Temel & Lineer Progresyon</h3>
+        <ul>
+          <li><div class="dot" style="background:#6c63ff"></div><strong>Odak:</strong> Form mükemmelliği. Her harekette tam ROM. Ağır değil, doğru.</li>
+          <li><div class="dot" style="background:#6c63ff"></div>Her set Hevy'e kaydedilir. Progresyon takip başlar.</li>
+          <li><div class="dot" style="background:#6c63ff"></div>Lineer progresyon: mümkünse her seansta +2.5kg (barbell hareketleri)</li>
+          <li><div class="dot" style="background:#6c63ff"></div>Makro takibi başlar — 2750 kcal hedef, protein öncelik</li>
+          <li><div class="dot" style="background:#6c63ff"></div>Uyku ve NEAT (8000 adım/gün) rutini oluşturulur</li>
+          <li><div class="dot" style="background:#6c63ff"></div>Kreatin başlatılır (5g/gün, yükleme gerekmez)</li>
+        </ul>
+        <div style="margin-top:10px;padding:8px;background:#1c1d2e;border-radius:8px;font-size:.75rem;color:#a78bfa;">Beklenti: Nöromüsküler adaptasyon → ilk 2 haftada güçlü ağırlık artışları (kas değil, sinirsel uyum)</div>
+      </div>
+      <div class="card">
+        <h3>📅 FAZ 2 · Hafta 5–8 — Hacim Birikimi</h3>
+        <ul>
+          <li><div class="dot" style="background:#fa8231"></div><strong>Odak:</strong> Çift progresyon. Lineer yavaşladığında rep range yöntemine geç.</li>
+          <li><div class="dot" style="background:#fa8231"></div>Her kas grubunda MEV'den MAV'a ilerle (+1 set/kas/hafta)</li>
+          <li><div class="dot" style="background:#fa8231"></div>Mümkünse 3. gün (Salon C) devreye girer — hacim %35 artar</li>
+          <li><div class="dot" style="background:#fa8231"></div>Goblet Squat ağırlığı arttıkça bel güçlenince Romanian Deadlift'e geçiş değerlendirmesi</li>
+          <li><div class="dot" style="background:#fa8231"></div>4 haftada bir beden ölçümü: bel, göğüs, kol, baldır (santimetre)</li>
+          <li><div class="dot" style="background:#fa8231"></div>Squat'a geçiş değerlendirmesi (Leg Press 100kg → squat hazırlık)</li>
+        </ul>
+        <div style="margin-top:10px;padding:8px;background:#1c1d2e;border-radius:8px;font-size:.75rem;color:#fa8231;">Beklenti: İlk görünür vücut kompozisyonu değişimi. Bel ince, omuz/göğüs genişler.</div>
+      </div>
+      <div class="card">
+        <h3>📅 FAZ 3 · Hafta 9–11 — Yoğunlaştırma</h3>
+        <ul>
+          <li><div class="dot" style="background:#43e97b"></div><strong>Odak:</strong> MRV sınırına yaklaşma. Maksimum uyarıcı stres.</li>
+          <li><div class="dot" style="background:#43e97b"></div>Ana hareketlerde ağır setler: Bench 4-6 rep, Deadlift 3-5 rep</li>
+          <li><div class="dot" style="background:#43e97b"></div>Tempo teknikleri: 3 saniyelik eccentric (yavaş iniş)</li>
+          <li><div class="dot" style="background:#43e97b"></div>Drop set: son sette %20 ağırlık düşür, failure'a kadar devam et</li>
+          <li><div class="dot" style="background:#43e97b"></div>Halı sahada net performans farkı hissedilmeli</li>
+        </ul>
+        <div style="margin-top:10px;padding:8px;background:#1c1d2e;border-radius:8px;font-size:.75rem;color:#43e97b;">Beklenti: Güçlü güç artışı. Bench +15-20kg, Deadlift +20-30kg üzerinden.</div>
+      </div>
+      <div class="card">
+        <h3>📅 Hafta 12 — Deload + Değerlendirme</h3>
+        <ul>
+          <li><div class="dot" style="background:#f9ca24"></div><strong>Neden deload?</strong> 11 haftalık birikmiş yorgunluk boşaltılır. Kaslar "super-kompanse" eder.</li>
+          <li><div class="dot" style="background:#f9ca24"></div>Aynı hareketler, %60 ağırlık, %60 set sayısı — 1 hafta</li>
+          <li><div class="dot" style="background:#f9ca24"></div>Testosteron kan testi — başlangıç değeriyle karşılaştır</li>
+          <li><div class="dot" style="background:#f9ca24"></div>Tüm ölçümler: kilo, bel, göğüs, kol, fotoğraf</li>
+          <li><div class="dot" style="background:#f9ca24"></div>Sonraki 12 hafta için yeni plan (ağırlıklar güncellendi)</li>
+        </ul>
+        <div style="margin-top:10px;padding:8px;background:#1c1d2e;border-radius:8px;font-size:.75rem;color:#f9ca24;">Hedef 12 hafta: -4 ile -6 kg yağ · +2 ile +3 kg kas · Bench +20 kg · Deadlift +30 kg</div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    Furkan için · Nisan 2026 · Kaynaklar: Renaissance Periodization, PubMed (Barakat 2020, Antonio 2016), JAMA Sleep Study 2011 · Bu plan tıbbi tavsiye değildir; testosteron sorunun için bir endokrinologa başvur.
+  </footer>
+
+</div>
+
+<script>
+  function switchTab(e, id) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    e.target.classList.add('active');
+    document.getElementById(id).classList.add('active');
+  }
+</script>
+</body>
+</html>
