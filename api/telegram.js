@@ -44,10 +44,19 @@ async function sendMessage(chatId, text) {
 }
 
 function extractWeight(text) {
+  const lower = text.toLowerCase().trim();
+
+  // Sadece sayı (ondalıklı) — 80-130 arası ise kilo kabul et
+  if (/^\d+[.,]?\d*$/.test(lower)) {
+    const val = parseFloat(lower.replace(',', '.'));
+    if (val >= 60 && val <= 150) return val;
+  }
+
   const patterns = [
-    /(?:kilo|ağırlık|tartı)[\s:]*(\d+[.,]\d+|\d+)/i,
+    /(?:kilo|kilom|tartı|ağırlık|tartıldım|tartildim)[\s:=]*(\d+[.,]\d+|\d+)/i,
     /(\d+[.,]\d+|\d+)\s*kg\b/i,
     /\/kilo\s+(\d+[.,]\d+|\d+)/i,
+    /^(\d+[.,]\d+)\s*$/,
   ];
   for (const p of patterns) {
     const m = text.match(p);
