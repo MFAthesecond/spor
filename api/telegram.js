@@ -86,11 +86,80 @@ module.exports = async function handler(req, res) {
         '👋 Merhaba! Ben Furkan\'ın beslenme asistanıyım.\n\n' +
         'Ne yapabilirim:\n' +
         '• Ne yediğini yaz → makroları hesaplar & kaydeder\n' +
-        '• "kilo 94.5" yaz → kiloyu kaydeder\n\n' +
+        '• "kilo 94.5" yaz → kiloyu kaydeder (günde birden fazla olur)\n' +
+        '• /ozet → bugünün makro özeti\n' +
+        '• /son7 → son 7 günün ortalaması\n\n' +
         'Örnekler:\n' +
         '• sabah 4 yumurta ve 2 dilim ekmek yedim\n' +
         '• kilo 93.8\n' +
         '• öğle tavuk göğsü 200g pilav 150g'
+      );
+      return res.status(200).end();
+    }
+
+    // /ozet — bugünün makro özeti
+    if (text === '/ozet') {
+      const { data: meals } = await supabase.from('meals').select('*').eq('date', date);
+      const t = (meals || []).reduce((a, m) => {
+        a.kcal += m.kcal; a.protein += m.protein; a.carb += m.carb; a.fat += m.fat;
+        return a;
+      }, { kcal: 0, protein: 0, carb: 0, fat: 0 });
+
+      const targets = { kcal: 2750, protein: 220, carb: 265, fat: 77 };
+
+      await sendMessage(chatId,
+        `📊 Bugünün Özeti (${date})\n\n` +
+        `🔥 ${t.kcal} / ${targets.kcal} kcal (${targets.kcal - t.kcal > 0 ? targets.kcal - t.kcal + ' kaldı' : 'hedef aşıldı!'})\n` +
+        `🥩 Protein: ${t.protein} / ${targets.protein}g\n` +
+        `🍚 Karb: ${t.carb} / ${targets.carb}g\n` +
+        `🥑 Yağ: ${t.fat} / ${targets.fat}g\n\n` +
+        `📝 ${(meals || []).length} öğün kaydedildi`
+      );
+      return res.status(200).end();
+    }
+
+    // /son7 — son 7 günün ortalaması
+    if (text === '/son7') {
+      const fromDate = new Date();
+      fromDate.setDate(fromDate.getDate() - 7);
+      const fromStr = fromDate.toISOString().slice(0, 10);
+      const { data: meals } = await supabase.from('meals').select('*').gte('date', fromStr);
+      const { data: weights } = await supabase.from('weight_logs').select('*').gte('date', fromStr);
+
+      const byDate = {};
+      (meals || []).forEach(m => {
+        if (!byDate[m.date]) byDate[m.date] = { kcal: 0, protein: 0, carb: 0, fat: 0 };
+        byDate[m.date].kcal += m.kcal;
+        byDate[m.date].protein += m.protein;
+        byDate[m.date].carb += m.carb;
+        byDate[m.date].fat += m.fat;
+      });
+
+      const days = Object.keys(byDate).length || 1;
+      const avg = {
+        kcal:    Math.round(Object.values(byDate).reduce((a, d) => a + d.kcal, 0) / days),
+        protein: Math.round(Object.values(byDate).reduce((a, d) => a + d.protein, 0) / days),
+        carb:    Math.round(Object.values(byDate).reduce((a, d) => a + d.carb, 0) / days),
+        fat:     Math.round(Object.values(byDate).reduce((a, d) => a + d.fat, 0) / days),
+      };
+
+      let weightText = '';
+      if (weights && weights.length > 0) {
+        const wVals = weights.map(w => parseFloat(w.weight_kg));
+        const wAvg  = (wVals.reduce((a, b) => a + b, 0) / wVals.length).toFixed(1);
+        const wMin  = Math.min(...wVals).toFixed(1);
+        const wMax  = Math.max(...wVals).toFixed(1);
+        weightText = `\n\n⚖️ Kilo: ort ${wAvg} kg (${wMin}–${wMax})`;
+      }
+
+      await sendMessage(chatId,
+        `📈 Son 7 Gün Ortalaması\n\n` +
+        `🔥 ${avg.kcal} kcal/gün\n` +
+        `🥩 Protein: ${avg.protein}g\n` +
+        `🍚 Karb: ${avg.carb}g\n` +
+        `🥑 Yağ: ${avg.fat}g\n` +
+        `📝 ${days} gün veri var` +
+        weightText
       );
       return res.status(200).end();
     }
@@ -100,14 +169,14 @@ module.exports = async function handler(req, res) {
     if (weight !== null) {
       const { error } = await supabase
         .from('weight_logs')
-        .upsert({ date, weight_kg: weight }, { onConflict: 'date' });
+        .insert({ date, weight_kg: weight, time });
 
       if (error) {
         await sendMessage(chatId, `❌ Veritabanı hatası: ${error.message}`);
         return res.status(200).end();
       }
 
-      await sendMessage(chatId, `⚖️ ${weight} kg kaydedildi!\n📅 ${date}`);
+      await sendMessage(chatId, `⚖️ ${weight} kg kaydedildi!\n📅 ${date} ${time}`);
       return res.status(200).end();
     }
 

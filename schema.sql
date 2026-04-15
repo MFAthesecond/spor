@@ -18,13 +18,16 @@ CREATE TABLE IF NOT EXISTS meals (
 
 CREATE INDEX IF NOT EXISTS meals_date_idx ON meals (date);
 
--- Kilo takip tablosu
+-- Kilo takip tablosu (günde birden fazla ölçüm destekler)
 CREATE TABLE IF NOT EXISTS weight_logs (
   id          bigserial    PRIMARY KEY,
-  date        date         NOT NULL UNIQUE,
+  date        date         NOT NULL,
+  time        text,
   weight_kg   numeric(5,2) NOT NULL,
   created_at  timestamptz  NOT NULL DEFAULT now()
 );
+
+CREATE INDEX IF NOT EXISTS weight_date_idx ON weight_logs (date);
 
 -- RLS devre dışı (kişisel araç)
 ALTER TABLE meals       DISABLE ROW LEVEL SECURITY;

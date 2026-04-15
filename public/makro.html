@@ -240,9 +240,9 @@
     .weight-card {
       background: var(--surface); border: 1px solid var(--border);
       border-radius: var(--radius); padding: 16px 20px; margin-bottom: 24px;
-      display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
     }
     .weight-card .wc-label { font-size: .72rem; color: var(--muted); text-transform: uppercase; letter-spacing: .07em; margin-bottom: 2px; }
+    .weight-top { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-bottom: 12px; }
     .weight-input-wrap { display: flex; align-items: center; gap: 8px; }
     .weight-input-wrap input {
       width: 90px; background: var(--surface2); border: 1px solid var(--border);
@@ -257,11 +257,17 @@
     }
     .btn-save-weight:hover { opacity: .85; }
     .weight-trend { display: flex; align-items: center; gap: 6px; font-size: .82rem; font-weight: 700; }
-    .weight-history-mini { display: flex; gap: 6px; align-items: flex-end; flex: 1; justify-content: flex-end; flex-wrap: wrap; }
-    .wh-dot { display: flex; flex-direction: column; align-items: center; gap: 3px; cursor: default; }
-    .wh-dot .wh-bar { width: 22px; border-radius: 3px 3px 0 0; background: var(--accent); opacity: .6; min-height: 4px; transition: height .3s; }
-    .wh-dot .wh-val { font-size: .6rem; color: var(--muted); }
-    .wh-dot .wh-day { font-size: .58rem; color: var(--muted); }
+    .weight-chart { width: 100%; height: 120px; margin-top: 8px; }
+    .weight-today-list { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+    .wt-chip {
+      background: var(--surface2); border: 1px solid var(--border); border-radius: 20px;
+      padding: 4px 12px; font-size: .75rem; display: flex; align-items: center; gap: 6px;
+    }
+    .wt-chip button {
+      background: none; border: none; color: #4a3030; cursor: pointer; font-size: .8rem;
+      padding: 0 2px; transition: color .2s;
+    }
+    .wt-chip button:hover { color: #f87171; }
 
     .section-divider {
       font-size: 1rem; font-weight: 700; color: var(--accent);
@@ -341,16 +347,19 @@
 
   <!-- KİLO ÖLÇÜMÜ -->
   <div class="weight-card">
-    <div>
-      <div class="wc-label">Günün Kilosu</div>
-      <div class="weight-input-wrap">
-        <input type="number" id="w-input" placeholder="95.0" step="0.1" min="30" max="300" />
-        <span class="weight-unit">kg</span>
-        <button class="btn-save-weight" onclick="saveWeightEntry()">Kaydet</button>
+    <div class="weight-top">
+      <div>
+        <div class="wc-label">Kilo Ölçümü</div>
+        <div class="weight-input-wrap">
+          <input type="number" id="w-input" placeholder="95.0" step="0.1" min="30" max="300" />
+          <span class="weight-unit">kg</span>
+          <button class="btn-save-weight" onclick="saveWeightEntry()">Kaydet</button>
+        </div>
+        <div class="weight-trend" id="w-trend" style="margin-top:6px;"></div>
       </div>
-      <div class="weight-trend" id="w-trend" style="margin-top:6px;"></div>
     </div>
-    <div class="weight-history-mini" id="w-history-mini"></div>
+    <div class="weight-today-list" id="w-today-list"></div>
+    <canvas class="weight-chart" id="w-chart"></canvas>
   </div>
 
   <!-- HEDEF AYARLARI -->
@@ -501,7 +510,7 @@ const TARGETS_KEY = 'furkan_targets_v1';
 let currentDate = todayStr();
 let targets     = loadTargets();
 let mealsCache  = {};   // { 'YYYY-MM-DD': [...meals] }
-let weightCache = {};   // { 'YYYY-MM-DD': kg_number }
+let weightData  = [];   // [ { id, date, time, weight_kg } ]
 
 function todayStr() {
   return new Date().toISOString().slice(0, 10);
@@ -564,12 +573,24 @@ async function getMeals(date) {
 
 async function fetchWeightHistory() {
   try {
-    const data = await apiGet('/api/weight');
-    weightCache = {};
-    data.forEach(row => { weightCache[row.date] = parseFloat(row.weight_kg); });
+    weightData = await apiGet('/api/weight');
   } catch (e) {
     console.error('fetchWeightHistory error:', e);
+    weightData = [];
   }
+}
+
+function getDailyAverages() {
+  const byDate = {};
+  weightData.forEach(w => {
+    if (!byDate[w.date]) byDate[w.date] = [];
+    byDate[w.date].push(parseFloat(w.weight_kg));
+  });
+  const result = {};
+  for (const [date, vals] of Object.entries(byDate)) {
+    result[date] = +(vals.reduce((a, b) => a + b, 0) / vals.length).toFixed(1);
+  }
+  return result;
 }
 
 async function fetchHistoryData() {
@@ -613,57 +634,156 @@ async function saveWeightEntry() {
   if (!val || val < 30 || val > 300) return;
   try {
     const saved = await apiPost('/api/weight', { date: currentDate, weight_kg: val });
-    weightCache[currentDate] = parseFloat(saved.weight_kg);
+    weightData.push(saved);
+    document.getElementById('w-input').value = '';
     renderWeight();
   } catch (e) {
     alert('Kilo kaydedilemedi: ' + e.message);
   }
 }
 
+async function deleteWeightEntry(id) {
+  try {
+    await apiDelete(`/api/weight?id=${id}`);
+    weightData = weightData.filter(w => w.id !== id);
+    renderWeight();
+  } catch (e) {
+    alert('Silinemedi: ' + e.message);
+  }
+}
+
 function renderWeight() {
-  const today = weightCache[currentDate];
-  const inp   = document.getElementById('w-input');
-  if (today && !inp.matches(':focus')) inp.value = today;
+  const avgs    = getDailyAverages();
+  const todayAvg = avgs[currentDate];
+  const trendEl = document.getElementById('w-trend');
+  const sortedDates = Object.keys(avgs).sort();
+  const prevDate = sortedDates.filter(d => d < currentDate).pop();
 
-  const trendEl     = document.getElementById('w-trend');
-  const sortedDates = Object.keys(weightCache).sort();
-  const prevDate    = sortedDates.filter(d => d < currentDate).pop();
-
-  if (today && prevDate) {
-    const diff  = (today - weightCache[prevDate]).toFixed(1);
+  if (todayAvg && prevDate) {
+    const diff  = (todayAvg - avgs[prevDate]).toFixed(1);
     const sign  = diff > 0 ? '+' : '';
     const color = diff > 0 ? '#f87171' : diff < 0 ? '#43e97b' : '#8891b4';
     const arrow = diff > 0 ? '↑' : diff < 0 ? '↓' : '→';
-    trendEl.innerHTML = `<span style="color:${color}">${arrow} ${sign}${diff} kg</span> <span style="color:var(--muted);font-weight:400;font-size:.72rem;">vs önceki ölçüm (${formatDateLabel(prevDate)})</span>`;
-  } else if (today) {
-    trendEl.innerHTML = `<span style="color:var(--muted);font-size:.72rem;">İlk ölçüm kaydedildi</span>`;
+    trendEl.innerHTML = `<span style="color:${color}">${arrow} ${sign}${diff} kg</span> <span style="color:var(--muted);font-weight:400;font-size:.72rem;">vs ${formatDateLabel(prevDate)} ort.</span>`;
+  } else if (todayAvg) {
+    trendEl.innerHTML = `<span style="color:var(--muted);font-size:.72rem;">Bugün ort: ${todayAvg} kg</span>`;
   } else {
     trendEl.innerHTML = '';
   }
 
-  const miniEl = document.getElementById('w-history-mini');
-  miniEl.innerHTML = '';
-  const recent = sortedDates.slice(-10);
-  if (recent.length < 2) return;
-  const vals  = recent.map(d => weightCache[d]);
-  const minW  = Math.min(...vals);
-  const maxW  = Math.max(...vals);
-  const range = maxW - minW || 1;
-  const days  = ['Paz','Pzt','Sal','Çar','Per','Cum','Cmt'];
-  recent.forEach(d => {
-    const v        = weightCache[d];
-    const h        = 8 + Math.round(((v - minW) / range) * 36);
-    const dt       = new Date(d + 'T12:00:00');
-    const isActive = d === currentDate;
-    const dot      = document.createElement('div');
-    dot.className  = 'wh-dot';
-    dot.title      = `${formatDateLabel(d)}: ${v} kg`;
-    dot.innerHTML  = `
-      <div class="wh-val">${v}</div>
-      <div class="wh-bar" style="height:${h}px;opacity:${isActive ? 1 : .5};background:${isActive ? 'var(--green)' : 'var(--accent)'}"></div>
-      <div class="wh-day">${days[dt.getDay()]}</div>
-    `;
-    miniEl.appendChild(dot);
+  // Today's entries as chips
+  const todayEntries = weightData.filter(w => w.date === currentDate);
+  const listEl = document.getElementById('w-today-list');
+  listEl.innerHTML = todayEntries.map(w =>
+    `<div class="wt-chip">
+      <span style="color:var(--muted);font-size:.68rem;">${w.time || ''}</span>
+      <span style="font-weight:700;">${w.weight_kg} kg</span>
+      <button onclick="deleteWeightEntry(${w.id})" title="Sil">✕</button>
+    </div>`
+  ).join('');
+
+  // Line chart on canvas
+  drawWeightChart();
+}
+
+function drawWeightChart() {
+  const canvas = document.getElementById('w-chart');
+  const ctx    = canvas.getContext('2d');
+  const dpr    = window.devicePixelRatio || 1;
+  const rect   = canvas.getBoundingClientRect();
+  canvas.width  = rect.width * dpr;
+  canvas.height = rect.height * dpr;
+  ctx.scale(dpr, dpr);
+  ctx.clearRect(0, 0, rect.width, rect.height);
+
+  const W = rect.width;
+  const H = rect.height;
+  const pad = { top: 16, right: 12, bottom: 22, left: 36 };
+
+  // Collect all entries sorted by date+time, take last 30
+  const sorted = [...weightData].sort((a, b) => {
+    if (a.date !== b.date) return a.date.localeCompare(b.date);
+    return (a.created_at || '').localeCompare(b.created_at || '');
+  }).slice(-30);
+
+  if (sorted.length < 2) {
+    ctx.fillStyle = '#8891b4';
+    ctx.font = '12px system-ui';
+    ctx.textAlign = 'center';
+    ctx.fillText('En az 2 ölçüm gerekli', W / 2, H / 2);
+    return;
+  }
+
+  const vals = sorted.map(w => parseFloat(w.weight_kg));
+  const minV = Math.min(...vals) - 0.5;
+  const maxV = Math.max(...vals) + 0.5;
+  const rangeV = maxV - minV || 1;
+
+  const chartW = W - pad.left - pad.right;
+  const chartH = H - pad.top - pad.bottom;
+
+  function x(i) { return pad.left + (i / (sorted.length - 1)) * chartW; }
+  function y(v) { return pad.top + (1 - (v - minV) / rangeV) * chartH; }
+
+  // Grid lines
+  ctx.strokeStyle = '#2a2f4a';
+  ctx.lineWidth = 0.5;
+  const gridLines = 4;
+  for (let i = 0; i <= gridLines; i++) {
+    const gv = minV + (rangeV * i / gridLines);
+    const gy = y(gv);
+    ctx.beginPath();
+    ctx.moveTo(pad.left, gy);
+    ctx.lineTo(W - pad.right, gy);
+    ctx.stroke();
+    ctx.fillStyle = '#8891b4';
+    ctx.font = '10px system-ui';
+    ctx.textAlign = 'right';
+    ctx.fillText(gv.toFixed(1), pad.left - 4, gy + 3);
+  }
+
+  // Line
+  ctx.beginPath();
+  ctx.strokeStyle = '#6c63ff';
+  ctx.lineWidth = 2;
+  ctx.lineJoin = 'round';
+  sorted.forEach((w, i) => {
+    const px = x(i);
+    const py = y(parseFloat(w.weight_kg));
+    if (i === 0) ctx.moveTo(px, py);
+    else ctx.lineTo(px, py);
+  });
+  ctx.stroke();
+
+  // Gradient fill
+  const grad = ctx.createLinearGradient(0, pad.top, 0, H - pad.bottom);
+  grad.addColorStop(0, 'rgba(108,99,255,0.25)');
+  grad.addColorStop(1, 'rgba(108,99,255,0)');
+  ctx.lineTo(x(sorted.length - 1), H - pad.bottom);
+  ctx.lineTo(x(0), H - pad.bottom);
+  ctx.closePath();
+  ctx.fillStyle = grad;
+  ctx.fill();
+
+  // Dots
+  sorted.forEach((w, i) => {
+    const px = x(i);
+    const py = y(parseFloat(w.weight_kg));
+    const isToday = w.date === currentDate;
+    ctx.beginPath();
+    ctx.arc(px, py, isToday ? 4 : 2.5, 0, Math.PI * 2);
+    ctx.fillStyle = isToday ? '#43e97b' : '#6c63ff';
+    ctx.fill();
+  });
+
+  // Date labels (first, mid, last)
+  ctx.fillStyle = '#8891b4';
+  ctx.font = '9px system-ui';
+  ctx.textAlign = 'center';
+  const labelIdx = [0, Math.floor(sorted.length / 2), sorted.length - 1];
+  labelIdx.forEach(i => {
+    const d = sorted[i].date.slice(5);
+    ctx.fillText(d, x(i), H - 4);
   });
 }
 
@@ -840,7 +960,8 @@ function renderHistory() {
     }, { kcal: 0, protein: 0, carb: 0, fat: 0 });
 
     const pct = Math.min((t.kcal / targets.kcal) * 100, 100);
-    const w   = weightCache[date];
+    const avgs = getDailyAverages();
+    const w   = avgs[date];
     const weightBadge = w
       ? `<span style="background:#1a1830;border:1px solid #3d3870;border-radius:12px;padding:2px 8px;color:#a78bfa;font-weight:700;">⚖️ ${w} kg</span>`
       : '';
