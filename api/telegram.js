@@ -1,9 +1,15 @@
 const { createClient } = require('@supabase/supabase-js');
 
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_KEY
-);
+let _supabase;
+function getSupabase() {
+  if (!_supabase) {
+    if (!process.env.SUPABASE_URL || !process.env.SUPABASE_KEY) {
+      throw new Error('SUPABASE_URL veya SUPABASE_KEY tanımlı değil');
+    }
+    _supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
+  }
+  return _supabase;
+}
 
 const SYSTEM_PROMPT = `Sen bir beslenme uzmanısın. Kullanıcı ne yediğini Türkçe olarak açıklayacak.
 Her besin maddesini ayrı ayrı analiz et, makrolarını hesapla ve SADECE aşağıdaki JSON formatında yanıt ver, başka hiçbir metin ekleme:
@@ -73,7 +79,8 @@ module.exports = async function handler(req, res) {
   const time   = turkeyTime();
 
   try {
-    // /start komutu
+    const supabase = getSupabase();
+
     if (text === '/start') {
       await sendMessage(chatId,
         '👋 Merhaba! Ben Furkan\'ın beslenme asistanıyım.\n\n' +

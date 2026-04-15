@@ -1,9 +1,15 @@
 const { createClient } = require('@supabase/supabase-js');
 
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_KEY
-);
+let _supabase;
+function getSupabase() {
+  if (!_supabase) {
+    if (!process.env.SUPABASE_URL || !process.env.SUPABASE_KEY) {
+      throw new Error('SUPABASE_URL veya SUPABASE_KEY tanımlı değil');
+    }
+    _supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
+  }
+  return _supabase;
+}
 
 function setCors(res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -15,8 +21,13 @@ module.exports = async function handler(req, res) {
   setCors(res);
   if (req.method === 'OPTIONS') return res.status(200).end();
 
-  // GET  /api/meals?date=YYYY-MM-DD   → meals for a single day
-  // GET  /api/meals?from=YYYY-MM-DD   → all meals from that date onward
+  let supabase;
+  try {
+    supabase = getSupabase();
+  } catch (e) {
+    return res.status(503).json({ error: e.message });
+  }
+
   if (req.method === 'GET') {
     const { date, from } = req.query;
     let query = supabase.from('meals').select('*').order('created_at');
@@ -30,7 +41,6 @@ module.exports = async function handler(req, res) {
     return res.json(data);
   }
 
-  // POST /api/meals  → create meal
   if (req.method === 'POST') {
     const { name, kcal, protein, carb, fat, items, date, time, ai_generated } = req.body || {};
     if (!name) return res.status(400).json({ error: 'name is required' });
@@ -52,8 +62,6 @@ module.exports = async function handler(req, res) {
     return res.status(201).json(data[0]);
   }
 
-  // DELETE /api/meals?id=123       → delete single meal
-  // DELETE /api/meals?date=YYYY-MM-DD → delete all meals for a day
   if (req.method === 'DELETE') {
     const { id, date } = req.query;
     if (id) {

@@ -1,9 +1,15 @@
 const { createClient } = require('@supabase/supabase-js');
 
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_KEY
-);
+let _supabase;
+function getSupabase() {
+  if (!_supabase) {
+    if (!process.env.SUPABASE_URL || !process.env.SUPABASE_KEY) {
+      throw new Error('SUPABASE_URL veya SUPABASE_KEY tanımlı değil');
+    }
+    _supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
+  }
+  return _supabase;
+}
 
 function setCors(res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -15,8 +21,13 @@ module.exports = async function handler(req, res) {
   setCors(res);
   if (req.method === 'OPTIONS') return res.status(200).end();
 
-  // GET /api/weight          → all weight entries
-  // GET /api/weight?from=    → entries from date onward
+  let supabase;
+  try {
+    supabase = getSupabase();
+  } catch (e) {
+    return res.status(503).json({ error: e.message });
+  }
+
   if (req.method === 'GET') {
     const { from } = req.query;
     let query = supabase.from('weight_logs').select('*').order('date');
@@ -26,7 +37,6 @@ module.exports = async function handler(req, res) {
     return res.json(data);
   }
 
-  // POST /api/weight  → upsert weight for a date
   if (req.method === 'POST') {
     const { date, weight_kg } = req.body || {};
     if (!weight_kg) return res.status(400).json({ error: 'weight_kg is required' });
