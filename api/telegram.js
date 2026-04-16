@@ -11,7 +11,26 @@ function getSupabase() {
   return _supabase;
 }
 
-const SYSTEM_PROMPT = `Sen bir beslenme uzmanısın. Kullanıcı ne yediğini Türkçe olarak açıklayacak.
+const CLASSIFY_PROMPT = `Kullanıcı bir Telegram fitness botuna mesaj yazıyor. Mesajın amacını belirle.
+SADECE aşağıdaki JSON'u döndür, başka metin yazma:
+{
+  "intent": "food" | "weight" | "summary" | "weekly" | "help" | "unknown",
+  "weight_kg": <sayı veya null>,
+  "food_text": "<yemek açıklaması veya null>"
+}
+
+Kurallar:
+- "food": Kullanıcı ne yediğini anlatıyor (yumurta yedim, tavuk pilav, kahvaltı yaptım vb.)
+- "weight": Kilo bildiriyor (kilom 94, 95.5 kg, tartıldım 93, bugün 94.2 vb.) — weight_kg'a sayıyı yaz
+- "summary": Günlük özet istiyor (özet, bugün ne yedim, durum, nasıl gidiyor vb.)
+- "weekly": Haftalık özet (son 7 gün, haftalık, bu hafta vb.)
+- "help": Yardım istiyor (ne yapabilirsin, komutlar, yardım, nasıl kullanılır vb.)
+- "unknown": Hiçbirine uymayan (selam, teşekkür vb.)
+
+food_text: intent food ise, mesajdaki yemek kısmını aynen yaz. Değilse null.
+weight_kg: intent weight ise, sayıyı float olarak yaz. Değilse null.`;
+
+const FOOD_PROMPT = `Sen bir beslenme uzmanısın. Kullanıcı ne yediğini Türkçe olarak açıklayacak.
 Her besin maddesini ayrı ayrı analiz et, makrolarını hesapla ve SADECE aşağıdaki JSON formatında yanıt ver, başka hiçbir metin ekleme:
 {
   "name": "öğünün kısa özet adı (Türkçe, max 60 karakter)",
@@ -32,40 +51,47 @@ async function sendMessage(chatId, text) {
     console.error('TELEGRAM_TOKEN is not set');
     return;
   }
-  const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+  const r = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ chat_id: chatId, text }),
   });
-  if (!res.ok) {
-    const err = await res.text();
-    console.error('sendMessage failed:', res.status, err);
+  if (!r.ok) {
+    const err = await r.text();
+    console.error('sendMessage failed:', r.status, err);
   }
 }
 
-function extractWeight(text) {
-  const lower = text.toLowerCase().trim();
-
-  // Sadece sayı (ondalıklı) — 80-130 arası ise kilo kabul et
-  if (/^\d+[.,]?\d*$/.test(lower)) {
-    const val = parseFloat(lower.replace(',', '.'));
-    if (val >= 60 && val <= 150) return val;
+async function callAI(systemPrompt, userText, maxTokens = 300) {
+  const r = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${process.env.OPENAI_KEY}`,
+    },
+    body: JSON.stringify({
+      model: 'gpt-4o-mini',
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userText },
+      ],
+      temperature: 0.1,
+      max_tokens: maxTokens,
+    }),
+  });
+  if (!r.ok) return null;
+  const data = await r.json();
+  const content = data.choices?.[0]?.message?.content || '';
+  try {
+    const match = content.match(/\{[\s\S]*\}/);
+    return JSON.parse(match ? match[0] : content);
+  } catch {
+    return null;
   }
+}
 
-  const patterns = [
-    /(?:kilo|kilom|tartı|ağırlık|tartıldım|tartildim)[\s:=]*(\d+[.,]\d+|\d+)/i,
-    /(\d+[.,]\d+|\d+)\s*kg\b/i,
-    /\/kilo\s+(\d+[.,]\d+|\d+)/i,
-    /^(\d+[.,]\d+)\s*$/,
-  ];
-  for (const p of patterns) {
-    const m = text.match(p);
-    if (m) {
-      const val = parseFloat(m[1].replace(',', '.'));
-      if (val > 20 && val < 500) return val;
-    }
-  }
-  return null;
+function turkeyDate() {
+  return new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Istanbul' });
 }
 
 function turkeyTime() {
@@ -84,30 +110,66 @@ module.exports = async function handler(req, res) {
 
   const chatId = message.chat.id;
   const text   = message.text.trim();
-  const date   = new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Istanbul' });
+  const date   = turkeyDate();
   const time   = turkeyTime();
 
   try {
     const supabase = getSupabase();
 
-    if (text === '/start') {
+    // /start her zaman sabit
+    if (text.toLowerCase() === '/start') {
       await sendMessage(chatId,
         '👋 Merhaba! Ben Furkan\'ın beslenme asistanıyım.\n\n' +
         'Ne yapabilirim:\n' +
         '• Ne yediğini yaz → makroları hesaplar & kaydeder\n' +
-        '• "kilo 94.5" yaz → kiloyu kaydeder (günde birden fazla olur)\n' +
-        '• /ozet → bugünün makro özeti\n' +
-        '• /son7 → son 7 günün ortalaması\n\n' +
+        '• "kilo 94.5" veya "kilom 95" yaz → kiloyu kaydeder\n' +
+        '• "özet" veya "bugün ne yedim" → günlük makro özeti\n' +
+        '• "haftalık" veya "son 7 gün" → haftalık ortalama\n\n' +
         'Örnekler:\n' +
         '• sabah 4 yumurta ve 2 dilim ekmek yedim\n' +
-        '• kilo 93.8\n' +
-        '• öğle tavuk göğsü 200g pilav 150g'
+        '• kilom 93.8\n' +
+        '• öğle tavuk göğsü 200g pilav 150g\n' +
+        '• özet'
       );
       return res.status(200).end();
     }
 
-    // /ozet — bugünün makro özeti
-    if (text === '/ozet') {
+    // AI ile mesajın amacını sınıflandır
+    if (!process.env.OPENAI_KEY) {
+      await sendMessage(chatId, '❌ OPENAI_KEY tanımlı değil.');
+      return res.status(200).end();
+    }
+
+    const classified = await callAI(CLASSIFY_PROMPT, text, 200);
+    if (!classified) {
+      await sendMessage(chatId, '❌ Mesajını anlayamadım. Tekrar dener misin?');
+      return res.status(200).end();
+    }
+
+    const intent = classified.intent;
+
+    // ── WEIGHT ──
+    if (intent === 'weight' && classified.weight_kg) {
+      const kg = parseFloat(classified.weight_kg);
+      if (kg < 20 || kg > 500) {
+        await sendMessage(chatId, '❌ Geçersiz kilo değeri.');
+        return res.status(200).end();
+      }
+      const { error } = await supabase
+        .from('weight_logs')
+        .insert({ date, weight_kg: kg, time });
+
+      if (error) {
+        await sendMessage(chatId, `❌ DB hatası: ${error.message}`);
+        return res.status(200).end();
+      }
+
+      await sendMessage(chatId, `⚖️ ${kg} kg kaydedildi!\n📅 ${date} ${time}`);
+      return res.status(200).end();
+    }
+
+    // ── SUMMARY ──
+    if (intent === 'summary') {
       const { data: meals } = await supabase.from('meals').select('*').eq('date', date);
       const t = (meals || []).reduce((a, m) => {
         a.kcal += m.kcal; a.protein += m.protein; a.carb += m.carb; a.fat += m.fat;
@@ -115,20 +177,29 @@ module.exports = async function handler(req, res) {
       }, { kcal: 0, protein: 0, carb: 0, fat: 0 });
 
       const targets = { kcal: 2750, protein: 220, carb: 265, fat: 77 };
+      const remKcal = targets.kcal - t.kcal;
+
+      let mealsList = '';
+      if (meals && meals.length > 0) {
+        mealsList = '\n\nÖğünler:\n' + meals.map(m =>
+          `• ${m.time || ''} ${m.name} (${m.kcal} kcal)`
+        ).join('\n');
+      }
 
       await sendMessage(chatId,
         `📊 Bugünün Özeti (${date})\n\n` +
-        `🔥 ${t.kcal} / ${targets.kcal} kcal (${targets.kcal - t.kcal > 0 ? targets.kcal - t.kcal + ' kaldı' : 'hedef aşıldı!'})\n` +
+        `🔥 ${t.kcal} / ${targets.kcal} kcal ${remKcal > 0 ? '(' + remKcal + ' kaldı)' : '(hedef aşıldı!)'}\n` +
         `🥩 Protein: ${t.protein} / ${targets.protein}g\n` +
         `🍚 Karb: ${t.carb} / ${targets.carb}g\n` +
-        `🥑 Yağ: ${t.fat} / ${targets.fat}g\n\n` +
-        `📝 ${(meals || []).length} öğün kaydedildi`
+        `🥑 Yağ: ${t.fat} / ${targets.fat}g\n` +
+        `📝 ${(meals || []).length} öğün` +
+        mealsList
       );
       return res.status(200).end();
     }
 
-    // /son7 — son 7 günün ortalaması
-    if (text === '/son7') {
+    // ── WEEKLY ──
+    if (intent === 'weekly') {
       const fromDate = new Date();
       fromDate.setDate(fromDate.getDate() - 7);
       const fromStr = fromDate.toISOString().slice(0, 10);
@@ -173,65 +244,38 @@ module.exports = async function handler(req, res) {
       return res.status(200).end();
     }
 
-    // Kilo girişi kontrolü
-    const weight = extractWeight(text);
-    if (weight !== null) {
-      const { error } = await supabase
-        .from('weight_logs')
-        .insert({ date, weight_kg: weight, time });
-
-      if (error) {
-        await sendMessage(chatId, `❌ Veritabanı hatası: ${error.message}`);
-        return res.status(200).end();
-      }
-
-      await sendMessage(chatId, `⚖️ ${weight} kg kaydedildi!\n📅 ${date} ${time}`);
+    // ── HELP ──
+    if (intent === 'help') {
+      await sendMessage(chatId,
+        '📖 Kullanım:\n\n' +
+        '• Yemek yaz → AI makroları hesaplar ve kaydeder\n' +
+        '• "kilo 94.5" → kilo kaydeder\n' +
+        '• "özet" → bugünün durumu\n' +
+        '• "haftalık" → son 7 gün ortalaması'
+      );
       return res.status(200).end();
     }
 
-    // AI ile öğün analizi
-    if (!process.env.OPENAI_KEY) {
-      await sendMessage(chatId, '❌ OPENAI_KEY sunucuda tanımlı değil. Vercel env variables\'ı kontrol et.');
+    // ── UNKNOWN (selam vb.) ──
+    if (intent === 'unknown') {
+      await sendMessage(chatId,
+        '👋 Ne yediğini yaz kaydedeyim, veya "özet" / "kilo 94.5" yazabilirsin.'
+      );
       return res.status(200).end();
     }
 
-    const openaiRes = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.OPENAI_KEY}`,
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: [
-          { role: 'system', content: SYSTEM_PROMPT },
-          { role: 'user', content: text },
-        ],
-        temperature: 0.2,
-        max_tokens: 600,
-      }),
-    });
+    // ── FOOD ──
+    const foodText = classified.food_text || text;
+    const meal = await callAI(FOOD_PROMPT, foodText, 600);
 
-    if (!openaiRes.ok) {
-      await sendMessage(chatId, '❌ AI analizi başarısız oldu. Biraz sonra tekrar dene.');
-      return res.status(200).end();
-    }
-
-    const aiData  = await openaiRes.json();
-    const content = aiData.choices?.[0]?.message?.content || '';
-
-    let meal;
-    try {
-      const jsonMatch = content.match(/\{[\s\S]*\}/);
-      meal = JSON.parse(jsonMatch ? jsonMatch[0] : content);
-    } catch {
-      await sendMessage(chatId, '❌ AI yanıtı işlenemedi. Daha açık yazmayı dene (örn: "tavuk 200g pirinç 150g").');
+    if (!meal || !meal.name) {
+      await sendMessage(chatId, '❌ Yemeği analiz edemedim. Daha açık yazmayı dene.');
       return res.status(200).end();
     }
 
     const { error: dbError } = await supabase.from('meals').insert({
       date,
-      name:         meal.name || text.slice(0, 60),
+      name:         meal.name,
       kcal:         Math.round(meal.kcal    || 0),
       protein:      Math.round(meal.protein || 0),
       carb:         Math.round(meal.carb    || 0),
@@ -242,11 +286,10 @@ module.exports = async function handler(req, res) {
     });
 
     if (dbError) {
-      await sendMessage(chatId, `❌ Veritabanı hatası: ${dbError.message}`);
+      await sendMessage(chatId, `❌ DB hatası: ${dbError.message}`);
       return res.status(200).end();
     }
 
-    // Yanıt mesajını formatla
     let itemsText = '';
     if (Array.isArray(meal.items) && meal.items.length > 0) {
       itemsText = '\n\nİçerik:\n' + meal.items
@@ -267,7 +310,8 @@ module.exports = async function handler(req, res) {
 
     return res.status(200).end();
   } catch (e) {
-    await sendMessage(chatId, `❌ Beklenmeyen hata: ${e.message}`).catch(() => {});
+    console.error('Telegram handler error:', e);
+    await sendMessage(chatId, `❌ Hata: ${e.message}`).catch(() => {});
     return res.status(200).end();
   }
 };
